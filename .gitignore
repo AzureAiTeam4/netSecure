@@ -4,6 +4,9 @@ data/
 # 로그
 logs/
 
+# 시각화
+figures/
+
 # Python
 __pycache__/
 *.pyc
