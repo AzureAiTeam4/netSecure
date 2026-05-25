@@ -1,6 +1,9 @@
 # 데이터
 data/
 
+# 로그
+logs/
+
 # Python
 __pycache__/
 *.pyc
