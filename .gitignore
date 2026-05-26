@@ -16,3 +16,6 @@ __pycache__/
 # 시스템
 .DS_Store
 .vscode/
+
+# 결과 파일 사진
+results/
