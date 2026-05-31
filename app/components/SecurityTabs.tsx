@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { generateEventRows, navigation, type EventRow, type TabId } from "./dashboard/widgets/data";
 import DashboardView from "./dashboard/tabs/DashboardView";
 import EventsView from "./dashboard/tabs/EventsView";
@@ -19,6 +19,27 @@ const views: Record<TabId, React.ComponentType<ViewProps>> = {
   reports: ReportsView,
   stats: StatsView,
 };
+
+const fallbackRefreshTime = "2025-05-21T14:35:22.000Z";
+
+let clientRefreshTime = "";
+
+function subscribeToClientTime(callback: () => void) {
+  const timeoutId = window.setTimeout(() => {
+    clientRefreshTime = new Date().toISOString();
+    callback();
+  }, 0);
+
+  return () => window.clearTimeout(timeoutId);
+}
+
+function getClientRefreshTime() {
+  return clientRefreshTime;
+}
+
+function getServerRefreshTime() {
+  return "";
+}
 
 function formatDateTime(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -42,7 +63,16 @@ function formatDate(date: Date) {
 
 export default function SecurityTabs() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
-  const [lastUpdated, setLastUpdated] = useState(() => new Date());
+  const hydratedRefreshTime = useSyncExternalStore(
+    subscribeToClientTime,
+    getClientRefreshTime,
+    getServerRefreshTime,
+  );
+  const [manualRefreshTime, setManualRefreshTime] = useState("");
+  const lastUpdated = useMemo(
+    () => new Date(manualRefreshTime || hydratedRefreshTime || fallbackRefreshTime),
+    [hydratedRefreshTime, manualRefreshTime],
+  );
   const title = useMemo(
     () => navigation.find((item) => item.id === activeTab)?.label ?? "대시보드",
     [activeTab],
@@ -56,7 +86,7 @@ export default function SecurityTabs() {
   const ActiveView = views[activeTab];
 
   const refreshData = () => {
-    setLastUpdated(new Date());
+    setManualRefreshTime(new Date().toISOString());
   };
 
   return (
