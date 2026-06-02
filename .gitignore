@@ -15,6 +15,9 @@ data/figures/
 data/*.zip
 data/*.csv
 
+# 환경변수
+.env
+
 # Python
 __pycache__/
 *.pyc
