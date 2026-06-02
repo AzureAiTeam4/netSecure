@@ -1,0 +1,18 @@
+# data 내부 원본/결과/시각화 파일 제외
+archive/
+analysis_results/
+logs/
+results/
+figures/
+
+# 압축/분석 결과 파일 제외
+*.zip
+*.csv
+
+# 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# 시스템 파일
+.DS_Store

@@ -6,7 +6,7 @@ import matplotlib.ticker as mticker
 import pandas as pd
 
 # ── 파라미터 ──────────────────────────────────────────────────────────────────
-CSV_FILE_NAME = "data/NF-UQ-NIDS-v2.csv"   # 샘플링데이터
+CSV_FILE_NAME = "data/data/NF-UQ-NIDS-v2.csv"   # 샘플링데이터
 CHUNK_SIZE = 500_000
 
 ROOT = os.path.dirname(__file__)

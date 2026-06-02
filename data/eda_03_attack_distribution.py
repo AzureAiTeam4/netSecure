@@ -14,7 +14,7 @@ import warnings
 warnings.filterwarnings('ignore')
 from pathlib import Path
 
-DATA_PATH = "data/attack_only_dataset.csv"
+DATA_PATH = "data/data/attack_only_dataset.csv"
 OUTPUT_DIR = Path("data/analysis_results")
 OUTPUT_DIR.mkdir(exist_ok=True)
 

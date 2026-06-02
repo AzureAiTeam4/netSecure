@@ -5,8 +5,8 @@ from datetime import datetime
 warnings.filterwarnings('ignore')
 
 # ====== 경로 설정 ======
-DATA_PATH = 'data/sampled_dataset.csv'
-OUT_PATH  = 'data/cleaned_dataset.csv'
+DATA_PATH = 'data/data/sampled_dataset.csv'
+OUT_PATH  = 'data/data/cleaned_dataset.csv'
 
 ROOT    = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(ROOT, 'logs')

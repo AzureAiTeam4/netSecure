@@ -1,11 +1,19 @@
-# 데이터
-data/
-
-# 로그
+# 로그/결과/시각화
 logs/
-
-# 시각화
+results/
 figures/
+analysis_results/
+analysis_results.zip
+distribution_analysis.csv
+
+# data 내부 결과물만 제외
+data/archive/
+data/analysis_results/
+data/logs/
+data/results/
+data/figures/
+data/*.zip
+data/*.csv
 
 # Python
 __pycache__/
@@ -16,6 +24,3 @@ __pycache__/
 # 시스템
 .DS_Store
 .vscode/
-
-# 결과 파일 사진
-results/

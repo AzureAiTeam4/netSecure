@@ -7,7 +7,7 @@ from datetime import datetime
 warnings.filterwarnings('ignore')
 
 # ====== 경로 설정 ======
-DATA_PATH = 'data/sampled_dataset.csv'
+DATA_PATH = 'data/data/sampled_dataset.csv'
 
 ROOT    = os.path.dirname(os.path.abspath(__file__))
 FIG_DIR = os.path.join(ROOT, 'figures')

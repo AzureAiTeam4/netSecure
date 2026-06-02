@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings('ignore')
 from pathlib import Path
 
-DATA_PATH  = "data/sampled_dataset.csv"
+DATA_PATH  = "data/data/sampled_dataset.csv"
 OUTPUT_DIR = Path("data/analysis_results/raw")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
