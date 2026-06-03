@@ -1,16 +1,6 @@
 # data_analysis — 전처리 및 EDA 모듈
 
-네트워크 트래픽 데이터 전처리 및 탐색적 분석(EDA) 모듈입니다.
-모델 학습은 Azure ML Designer에서 수행하였으며, 추론 엔드포인트는 백엔드에서 연동합니다.
-
-## 역할
-
-| 단계 | 담당 |
-|------|------|
-| 데이터 전처리 / EDA | **이 폴더** |
-| 모델 학습 | Azure ML Designer |
-| 추론 API | Azure ML 엔드포인트 (백엔드 연동) |
-| 위협 분석 / 보고서 생성 | Azure OpenAI + Azure AI Search (백엔드 연동) |
+네트워크 트래픽 데이터 전처리 및 탐색적 분석(EDA)
 
 ## 데이터셋
 
@@ -59,7 +49,7 @@
 ## 파일 구조
 
 ```
-data/
+data_analysis/
 ├── .gitignore
 ├── README.md
 ├── sampling.ipynb                  # 샘플링
@@ -70,13 +60,14 @@ data/
 ├── eda_02_feature_analysis.py      # 피처 분석
 ├── eda_03_attack_distribution.py   # 공격 유형별 분포 (정규화)
 ├── eda_04_raw_values.py            # 공격 유형별 분포 (원본값)
-├── archive/                        # 실험용 코드 보관
-└── data/                           # 데이터셋 (gitignore)
-    ├── NF-UQ-NIDS-v2.csv           # 원본 (샘플링 전)
-    ├── sampled_dataset.csv         # 샘플링 완료 (450만 행, raw)
-    ├── cleaned_dataset.csv         # 전처리 완료 (정규화)
-    ├── final_dataset.csv           # Azure ML 업로드용
-    └── attack_only_dataset.csv     # 공격 행만 (300만 행, 정규화)
+├── archive/                        # 실험용 코드 보관 (gitignore)
+├── data/                           # 데이터셋 (gitignore)
+│   ├── NF-UQ-NIDS-v2.csv
+│   ├── sampled_dataset.csv
+│   ├── cleaned_dataset.csv
+│   ├── final_dataset.csv
+│   └── attack_only_dataset.csv
+├── figures/                        # 시각화 결과 (gitignore)
+├── logs/                           # 실행 로그 (gitignore)
+└── analysis_results/               # EDA 분석 결과 (gitignore)
 ```
-
-> `data/`, `logs/`, `analysis_results/` 는 gitignore 처리되어 버전관리에서 제외됩니다.
