@@ -15,6 +15,7 @@
 
 | 단계 | 담당 |
 |------|------|
+| UI / 대시보드 | `frontend/` — Next.js |
 | 데이터 전처리 / EDA | `data_analysis/` |
 | 모델 학습 | Azure ML Designer |
 | 추론 API | Azure ML 엔드포인트 (백엔드 연동) |
