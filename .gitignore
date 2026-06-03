@@ -1,19 +1,14 @@
-# 로그/결과/시각화
-logs/
-results/
-figures/
-analysis_results/
-analysis_results.zip
-distribution_analysis.csv
+# data_analysis 내부 결과물 제외 (data_analysis/.gitignore에서도 처리)
+data_analysis/data/
+data_analysis/archive/
+data_analysis/analysis_results/
+data_analysis/logs/
+data_analysis/figures/
+data_analysis/*.zip
+data_analysis/*.csv
 
-# data 내부 결과물만 제외
-data/archive/
-data/analysis_results/
-data/logs/
-data/results/
-data/figures/
-data/*.zip
-data/*.csv
+# 실험 결과
+results/
 
 # 환경변수
 .env
