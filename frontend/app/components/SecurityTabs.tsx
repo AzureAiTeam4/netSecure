@@ -2,8 +2,9 @@
 
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { type ComponentType, useMemo, useState, useSyncExternalStore } from "react";
 import { generateEventRows, navigation, type EventRow, type TabId } from "./dashboard/widgets/data";
+import type { EventListFilters } from "./dashboard/widgets/EventList";
 import DashboardView from "./dashboard/tabs/DashboardView";
 import EventsView from "./dashboard/tabs/EventsView";
 import ReportsView from "./dashboard/tabs/ReportsView";
@@ -11,13 +12,24 @@ import StatsView from "./dashboard/tabs/StatsView";
 
 type ViewProps = {
   eventRows: EventRow[];
+  onMoveTab?: (tabId: TabId, filters?: EventListFilters) => void;
+  eventListFilters?: EventListFilters;
 };
 
-const views: Record<TabId, React.ComponentType<ViewProps>> = {
+const views: Record<TabId, ComponentType<ViewProps>> = {
   dashboard: DashboardView,
   events: EventsView,
   reports: ReportsView,
   stats: StatsView,
+};
+
+const defaultEventListFilters: EventListFilters = {
+  kind: "전체",
+  risk: "전체",
+  attack: "전체",
+  category: "전체",
+  status: "전체",
+  query: "",
 };
 
 const fallbackRefreshTime = "2025-05-21T14:35:22.000Z";
@@ -44,11 +56,13 @@ function getServerRefreshTime() {
 function formatDateTime(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
 
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join("-") + ` ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return (
+    [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate()),
+    ].join("-") + ` ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
 }
 
 function formatDate(date: Date) {
@@ -63,35 +77,59 @@ function formatDate(date: Date) {
 
 export default function SecurityTabs() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [eventListFilters, setEventListFilters] = useState<EventListFilters>(defaultEventListFilters);
+
   const hydratedRefreshTime = useSyncExternalStore(
     subscribeToClientTime,
     getClientRefreshTime,
     getServerRefreshTime,
   );
+
   const [manualRefreshTime, setManualRefreshTime] = useState("");
+
   const lastUpdated = useMemo(
     () => new Date(manualRefreshTime || hydratedRefreshTime || fallbackRefreshTime),
     [hydratedRefreshTime, manualRefreshTime],
   );
+
   const title = useMemo(
     () => navigation.find((item) => item.id === activeTab)?.label ?? "대시보드",
     [activeTab],
   );
+
   const eventRows = useMemo(() => generateEventRows(lastUpdated), [lastUpdated]);
+
   const rangeStart = useMemo(() => {
     const date = new Date(lastUpdated);
     date.setDate(date.getDate() - 7);
     return date;
   }, [lastUpdated]);
+
   const ActiveView = views[activeTab];
 
   const refreshData = () => {
     setManualRefreshTime(new Date().toISOString());
   };
 
+  function moveTab(tabId: TabId, filters?: EventListFilters) {
+    if (filters) {
+      setEventListFilters(filters);
+    }
+
+    setActiveTab(tabId);
+  }
+
+  function handleNavigationClick(tabId: TabId) {
+    if (tabId === "events") {
+      setEventListFilters(defaultEventListFilters);
+    }
+
+    setActiveTab(tabId);
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#f5f7fb] text-slate-950 lg:flex-row">
-      <aside className="flex w-full shrink-0 flex-col bg-[#050914] text-white shadow-2xl shadow-black/30 lg:w-64">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f5f7fb] text-slate-950 lg:flex-row">
+      <aside className="flex w-full shrink-0 flex-col bg-[#050914] text-white shadow-2xl shadow-black/30 lg:h-screen lg:w-64">
         <div className="border-b border-white/10 px-6 py-6">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-lg border border-blue-400/50 bg-blue-500/10 text-sm font-bold">
@@ -112,7 +150,7 @@ export default function SecurityTabs() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleNavigationClick(item.id)}
                 className={[
                   "flex h-11 w-full items-center gap-3 rounded-md px-4 text-left text-sm font-medium transition",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400",
@@ -136,14 +174,14 @@ export default function SecurityTabs() {
           <button
             type="button"
             onClick={refreshData}
-            className="mt-4 h-9 w-full rounded-md border border-blue-400/30 bg-blue-500/10 text-blue-100"
+            className="mt-4 h-9 w-full rounded-md border border-blue-400/30 bg-blue-500/10 text-blue-100 transition hover:border-blue-300/50 hover:bg-blue-500/20 hover:text-white active:bg-blue-500/30"
           >
             데이터 새로고침
           </button>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 p-5 lg:p-8">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5 lg:h-screen lg:p-8">
         <section className="mx-auto max-w-7xl">
           <header className="mb-5 flex flex-col gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
             <div>
@@ -154,21 +192,31 @@ export default function SecurityTabs() {
                 Scanning, Reconnaissance, XSS, Password, Injection 공격 유형 중심 분석
               </p>
             </div>
+
             <div className="flex flex-wrap gap-2 text-sm">
-              <button className="h-10 rounded-md border border-slate-200 px-4 text-slate-700">
+              <button
+                type="button"
+                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700"
+              >
                 {formatDate(rangeStart)} ~ {formatDate(lastUpdated)}
               </button>
+
               <button
                 type="button"
                 onClick={refreshData}
-                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700"
+                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
               >
                 새로고침
               </button>
             </div>
           </header>
 
-          <ActiveView key={lastUpdated.getTime()} eventRows={eventRows} />
+          <ActiveView
+            key={`${activeTab}-${lastUpdated.getTime()}`}
+            eventRows={eventRows}
+            onMoveTab={moveTab}
+            eventListFilters={eventListFilters}
+          />
         </section>
       </main>
     </div>
