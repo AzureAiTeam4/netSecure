@@ -1,4 +1,4 @@
-# data — 전처리 및 EDA 모듈
+# data_analysis — 전처리 및 EDA 모듈
 
 네트워크 트래픽 데이터 전처리 및 탐색적 분석(EDA) 모듈입니다.
 모델 학습은 Azure ML Designer에서 수행하였으며, 추론 엔드포인트는 백엔드에서 연동합니다.

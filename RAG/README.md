@@ -1,4 +1,4 @@
-# ai_report — 보안 리포트 생성 모듈
+# RAG — 보안 리포트 생성 모듈
 
 보안 이벤트를 입력받아 Azure AI Search(RAG) + Azure OpenAI(GPT-4o)로 대응 리포트 JSON을 생성합니다.
 
@@ -44,7 +44,7 @@ ai_report/
 ## 사용법
 
 ```python
-from ai_report.report_generator import generate_security_report
+from RAG.report_generator import generate_security_report
 
 event = {
     "Attack_label": 1,  # ML 모델 출력 (1=injection, 2=password, 3=reconnaissance, 4=scanning, 5=xss)
