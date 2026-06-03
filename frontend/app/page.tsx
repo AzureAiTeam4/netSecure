@@ -4,4 +4,3 @@ export default function Home() {
   return <SecurityTabs />;
 }
 
-//commit change
