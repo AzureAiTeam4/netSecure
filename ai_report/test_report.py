@@ -5,8 +5,6 @@ from prompt_builder import LABEL_MAP
 SAMPLE_EVENTS = [
     {
         "Attack_label":                  1,  # injection
-        "IPV4_SRC_ADDR":           "203.0.113.10",
-        "IPV4_DST_ADDR":           "10.0.0.5",
         "L4_SRC_PORT":             54321,
         "L4_DST_PORT":             3306,
         "PROTOCOL":                6,
@@ -25,8 +23,6 @@ SAMPLE_EVENTS = [
     },
     {
         "Attack_label":                  5,  # xss
-        "IPV4_SRC_ADDR":           "198.51.100.22",
-        "IPV4_DST_ADDR":           "10.0.0.5",
         "L4_SRC_PORT":             61234,
         "L4_DST_PORT":             80,
         "PROTOCOL":                6,
@@ -45,8 +41,6 @@ SAMPLE_EVENTS = [
     },
     {
         "Attack_label":                  2,  # password
-        "IPV4_SRC_ADDR":           "192.0.2.55",
-        "IPV4_DST_ADDR":           "10.0.0.10",
         "L4_SRC_PORT":             49152,
         "L4_DST_PORT":             22,
         "PROTOCOL":                6,
@@ -65,8 +59,6 @@ SAMPLE_EVENTS = [
     },
     {
         "Attack_label":                  4,  # scanning
-        "IPV4_SRC_ADDR":           "172.16.0.99",
-        "IPV4_DST_ADDR":           "10.0.0.5",
         "L4_SRC_PORT":             43210,
         "L4_DST_PORT":             445,
         "PROTOCOL":                6,
@@ -85,8 +77,6 @@ SAMPLE_EVENTS = [
     },
     {
         "Attack_label":                  3,  # reconnaissance
-        "IPV4_SRC_ADDR":           "10.10.10.5",
-        "IPV4_DST_ADDR":           "10.0.0.5",
         "L4_SRC_PORT":             52000,
         "L4_DST_PORT":             443,
         "PROTOCOL":                6,
@@ -109,7 +99,7 @@ SAMPLE_EVENTS = [
 def main():
     for event in SAMPLE_EVENTS:
         print(f"\n{'='*60}")
-        print(f"[{LABEL_MAP.get(event['Attack_label'])}] {event['IPV4_SRC_ADDR']} → {event['IPV4_DST_ADDR']}:{event['L4_DST_PORT']}")
+        print(f"[Attack_label={event['Attack_label']}] {LABEL_MAP.get(event['Attack_label'])}")
         print("=" * 60)
         try:
             report = generate_security_report(event)

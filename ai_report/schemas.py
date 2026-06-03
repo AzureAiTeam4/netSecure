@@ -1,30 +1,12 @@
 from typing import TypedDict, List
 
 
-class SecurityEvent(TypedDict):
-    # ML 모델 출력 (Attack_label: 1=injection, 2=password, 3=reconnaissance, 4=scanning, 5=xss)
-    Attack_label: int
+class SecurityEvent(TypedDict, total=False):
+    # 예시 확정 필드: ML 모델 출력
+    # (1=injection, 2=password, 3=reconnaissance, 4=scanning, 5=xss)
+    Attack_label: int   # required
 
-    # 네트워크 원본 (전처리 시 제거됐으나 백엔드가 보유)
-    IPV4_SRC_ADDR: str
-    IPV4_DST_ADDR: str
-
-    # attack_only_dataset.csv 컬럼과 동일
-    L4_SRC_PORT: int
-    L4_DST_PORT: int
-    PROTOCOL: int
-    L7_PROTO: float
-    IN_BYTES: int
-    IN_PKTS: int
-    OUT_BYTES: int
-    OUT_PKTS: int
-    FLOW_DURATION_MILLISECONDS: int
-    MIN_TTL: int
-    MAX_TTL: int
-    TCP_FLAGS_SYN: int
-    TCP_FLAGS_ACK: int
-    TCP_FLAGS_RST: int
-    TCP_FLAGS_FIN: int
+    # 나머지 필드는 백엔드 스키마 확정 후 추가 필요
 
 
 class SecurityReport(TypedDict):

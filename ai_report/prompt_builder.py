@@ -24,8 +24,7 @@ QUERY_HINTS = {
 def build_event_message(event: SecurityEvent) -> str:
     # raw 피처 값을 조합해 이벤트 설명 문자열 생성
     return (
-        f"{event.get('IPV4_SRC_ADDR', '')}:{event.get('L4_SRC_PORT', '')} → "
-        f"{event.get('IPV4_DST_ADDR', '')}:{event.get('L4_DST_PORT', '')}, "
+        f"src_port={event.get('L4_SRC_PORT', '')} → dst_port={event.get('L4_DST_PORT', '')}, "
         f"IN={event.get('IN_BYTES', 0)}B/{event.get('IN_PKTS', 0)}pkts "
         f"OUT={event.get('OUT_BYTES', 0)}B/{event.get('OUT_PKTS', 0)}pkts "
         f"FLOW={event.get('FLOW_DURATION_MILLISECONDS', 0)}ms "
@@ -120,8 +119,6 @@ def build_user_prompt(event: dict, retrieved_docs: list[dict]) -> str:
 [보안 이벤트]
 attack_type: {attack_name}
 event_message: {event_message}
-src_ip: {event.get("IPV4_SRC_ADDR", "")}
-dst_ip: {event.get("IPV4_DST_ADDR", "")}
 
 [RAG 문서 근거]
 {retrieved_context}

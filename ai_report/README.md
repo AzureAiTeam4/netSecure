@@ -47,24 +47,8 @@ ai_report/
 from ai_report.report_generator import generate_security_report
 
 event = {
-    "Attack_label":               1,             # ML 모델 출력 (1=injection, 2=password, 3=reconnaissance, 4=scanning, 5=xss)
-    "IPV4_SRC_ADDR":              "203.0.113.10",
-    "IPV4_DST_ADDR":              "10.0.0.5",
-    "L4_SRC_PORT":                54321,
-    "L4_DST_PORT":                3306,
-    "PROTOCOL":                   6,
-    "L7_PROTO":                   7.0,
-    "IN_BYTES":                   511,
-    "IN_PKTS":                    5,
-    "OUT_BYTES":                  2163,
-    "OUT_PKTS":                   5,
-    "FLOW_DURATION_MILLISECONDS": 320,
-    "MIN_TTL":                    64,
-    "MAX_TTL":                    64,
-    "TCP_FLAGS_SYN":              1,
-    "TCP_FLAGS_ACK":              1,
-    "TCP_FLAGS_RST":              0,
-    "TCP_FLAGS_FIN":              1,
+    "Attack_label": 1,  # ML 모델 출력 (1=injection, 2=password, 3=reconnaissance, 4=scanning, 5=xss)
+    # 나머지 필드는 백엔드 스키마 확정 후 추가 필요 (schemas.py 참고)
 }
 
 report = generate_security_report(event)
