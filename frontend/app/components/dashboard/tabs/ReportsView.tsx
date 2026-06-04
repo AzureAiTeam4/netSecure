@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import AiReport from "../widgets/AiReport";
+import AiReport, { type AiReportResponse } from "../widgets/AiReport";
 import type { EventRow, TabId } from "../widgets/data";
 import EventList, { type EventListFilters } from "../widgets/EventList";
 import ReportTargetSummary from "../widgets/ReportTargetSummary";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 function matchesFilters(row: EventRow, filters?: EventListFilters) {
   if (!filters) return true;
@@ -27,6 +30,9 @@ function matchesFilters(row: EventRow, filters?: EventListFilters) {
   const matchesStatus =
     !filters.status || filters.status === "전체" || row[8] === filters.status;
 
+  const matchesPriority =
+    !filters.priorityOnly || row[7] === "High" || row[8] === "확인 필요";
+
   const keyword = filters.query?.trim().toLowerCase() ?? "";
 
   const matchesKeyword =
@@ -45,6 +51,7 @@ function matchesFilters(row: EventRow, filters?: EventListFilters) {
     matchesAttack &&
     matchesCategory &&
     matchesStatus &&
+    matchesPriority &&
     matchesKeyword
   );
 }
@@ -78,9 +85,16 @@ export default function ReportsView({
     return findInitialEvent(eventRows, eventListFilters);
   }, [eventRows, eventListFilters]);
 
-  const [selectedEvent, setSelectedEvent] = useState<EventRow | undefined>(initialEvent);
+  const [selectedEvent, setSelectedEvent] = useState<EventRow | undefined>(
+    initialEvent,
+  );
   const [showReport, setShowReport] = useState(isDirectReportMode);
   const [directReportMode, setDirectReportMode] = useState(isDirectReportMode);
+
+  const [report, setReport] = useState<AiReportResponse | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const reportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -88,9 +102,15 @@ export default function ReportsView({
       eventListFilters?.openReport && eventListFilters?.focusEventId,
     );
 
-    setSelectedEvent(findInitialEvent(eventRows, eventListFilters));
+    const nextEvent = findInitialEvent(eventRows, eventListFilters);
+
+    setSelectedEvent(nextEvent);
     setShowReport(nextIsDirectReportMode);
     setDirectReportMode(nextIsDirectReportMode);
+
+    setReport(undefined);
+    setIsLoading(false);
+    setError(null);
   }, [eventRows, eventListFilters]);
 
   useEffect(() => {
@@ -104,19 +124,62 @@ export default function ReportsView({
     }, 0);
   }, [showReport, selectedEvent]);
 
+  function resetReportState() {
+    setReport(undefined);
+    setIsLoading(false);
+    setError(null);
+  }
+
   function handleSelectEvent(event: EventRow) {
     setSelectedEvent(event);
     setShowReport(false);
     setDirectReportMode(false);
+    resetReportState();
   }
 
-  function handleShowReport() {
+  async function handleShowReport() {
+    if (!selectedEvent) return;
+
     setShowReport(true);
+    setReport(undefined);
+    setError(null);
+
+    /*
+      백엔드 연결 전:
+      - 아래 fetch 코드는 주석 상태로 둔다.
+      - AiReport.tsx 내부의 mock RAG 리포트가 표시된다.
+
+      백엔드 연결 후:
+      - 아래 주석을 해제하면 /api/report/{event_id}에서 실제 RAG 리포트를 받아온다.
+      - 백엔드 주소가 다르면 frontend/.env.local의 NEXT_PUBLIC_API_BASE_URL만 수정하면 된다.
+    */
+
+    /*
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/report/${selectedEvent[0]}`,
+      );
+
+      if (!response.ok) {
+        throw new Error("AI 리포트를 불러오지 못했습니다.");
+      }
+
+      const data: AiReportResponse = await response.json();
+      setReport(data);
+    } catch {
+      setError("AI 리포트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+    */
   }
 
   function handleChooseAnotherEvent() {
     setDirectReportMode(false);
     setShowReport(false);
+    resetReportState();
   }
 
   if (directReportMode) {
@@ -153,7 +216,13 @@ export default function ReportsView({
           />
 
           <div ref={reportRef}>
-            <AiReport event={selectedEvent} expanded />
+            <AiReport
+              event={selectedEvent}
+              report={report}
+              isLoading={isLoading}
+              error={error}
+              expanded
+            />
           </div>
         </div>
       </div>
@@ -183,7 +252,13 @@ export default function ReportsView({
 
       {showReport ? (
         <div ref={reportRef}>
-          <AiReport event={selectedEvent} expanded />
+          <AiReport
+            event={selectedEvent}
+            report={report}
+            isLoading={isLoading}
+            error={error}
+            expanded
+          />
         </div>
       ) : null}
     </div>
