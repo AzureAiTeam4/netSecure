@@ -9,7 +9,6 @@ load_dotenv()  # .env 파일 로드
 router = APIRouter()
 
 # 프론트엔드에서 보내는 트래픽 데이터 형식
-# 프론트엔드에서 보내는 트래픽 데이터 형식
 class TrafficData(BaseModel):
     src_ip: str = ""              # 출발지 IP (모델 입력 제외)
     dst_ip: str = ""              # 목적지 IP (모델 입력 제외)
@@ -71,8 +70,6 @@ class TrafficData(BaseModel):
     NUM_PKTS_256_TO_512_BYTES: float = 0
     NUM_PKTS_512_TO_1024_BYTES: float = 0
     NUM_PKTS_1024_TO_1514_BYTES: float = 0
-    Label: float = 0        # 정상/공격 여부
-    Attack_label: float = 0 # 공격 유형 번호
 
 # POST /api/predict 요청이 오면 실행
 # 이진분류 → 공격이면 다중분류 순서로 진행
@@ -87,72 +84,65 @@ def predict(data: TrafficData):
 
     input_data = {
         "Inputs": {
-            "input1": {
-                "L4_SRC_PORT": [data.L4_SRC_PORT],
-                "L4_DST_PORT": [data.L4_DST_PORT],
-                "PROTOCOL": [data.PROTOCOL],
-                "L7_PROTO": [data.L7_PROTO],
-                "IN_BYTES": [data.IN_BYTES],
-                "IN_PKTS": [data.IN_PKTS],
-                "OUT_BYTES": [data.OUT_BYTES],
-                "OUT_PKTS": [data.OUT_PKTS],
-                "FLOW_DURATION_MILLISECONDS": [data.FLOW_DURATION_MILLISECONDS],
-                "DURATION_IN": [data.DURATION_IN],
-                "DURATION_OUT": [data.DURATION_OUT],
-                "TCP_FLAGS": [data.TCP_FLAGS],
-                "CLIENT_TCP_FLAGS": [data.CLIENT_TCP_FLAGS],
-                "SERVER_TCP_FLAGS": [data.SERVER_TCP_FLAGS],
-                "TCP_WIN_MAX_IN": [data.TCP_WIN_MAX_IN],
-                "TCP_WIN_MAX_OUT": [data.TCP_WIN_MAX_OUT],
-                "LONGEST_FLOW_PKT": [data.LONGEST_FLOW_PKT],
-                "SHORTEST_FLOW_PKT": [data.SHORTEST_FLOW_PKT],
-                "MIN_IP_PKT_LEN": [data.MIN_IP_PKT_LEN],
-                "MAX_IP_PKT_LEN": [data.MAX_IP_PKT_LEN],
-                "SRC_TO_DST_AVG_THROUGHPUT": [data.SRC_TO_DST_AVG_THROUGHPUT],
-                "DST_TO_SRC_AVG_THROUGHPUT": [data.DST_TO_SRC_AVG_THROUGHPUT],
-                "RETRANSMITTED_IN_BYTES": [data.RETRANSMITTED_IN_BYTES],
-                "RETRANSMITTED_IN_PKTS": [data.RETRANSMITTED_IN_PKTS],
-                "RETRANSMITTED_OUT_BYTES": [data.RETRANSMITTED_OUT_BYTES],
-                "RETRANSMITTED_OUT_PKTS": [data.RETRANSMITTED_OUT_PKTS],
-                "TCP_FLAGS_FIN": [data.TCP_FLAGS_FIN],
-                "TCP_FLAGS_SYN": [data.TCP_FLAGS_SYN],
-                "TCP_FLAGS_RST": [data.TCP_FLAGS_RST],
-                "TCP_FLAGS_PSH": [data.TCP_FLAGS_PSH],
-                "TCP_FLAGS_ACK": [data.TCP_FLAGS_ACK],
-                "TCP_FLAGS_URG": [data.TCP_FLAGS_URG],
-                "TCP_FLAGS_ECE": [data.TCP_FLAGS_ECE],
-                "TCP_FLAGS_CWR": [data.TCP_FLAGS_CWR],
-                "CLIENT_TCP_FLAGS_FIN": [data.CLIENT_TCP_FLAGS_FIN],
-                "CLIENT_TCP_FLAGS_SYN": [data.CLIENT_TCP_FLAGS_SYN],
-                "CLIENT_TCP_FLAGS_RST": [data.CLIENT_TCP_FLAGS_RST],
-                "CLIENT_TCP_FLAGS_PSH": [data.CLIENT_TCP_FLAGS_PSH],
-                "CLIENT_TCP_FLAGS_ACK": [data.CLIENT_TCP_FLAGS_ACK],
-                "CLIENT_TCP_FLAGS_URG": [data.CLIENT_TCP_FLAGS_URG],
-                "CLIENT_TCP_FLAGS_ECE": [data.CLIENT_TCP_FLAGS_ECE],
-                "CLIENT_TCP_FLAGS_CWR": [data.CLIENT_TCP_FLAGS_CWR],
-                "SERVER_TCP_FLAGS_FIN": [data.SERVER_TCP_FLAGS_FIN],
-                "SERVER_TCP_FLAGS_SYN": [data.SERVER_TCP_FLAGS_SYN],
-                "SERVER_TCP_FLAGS_RST": [data.SERVER_TCP_FLAGS_RST],
-                "SERVER_TCP_FLAGS_PSH": [data.SERVER_TCP_FLAGS_PSH],
-                "SERVER_TCP_FLAGS_ACK": [data.SERVER_TCP_FLAGS_ACK],
-                "SERVER_TCP_FLAGS_URG": [data.SERVER_TCP_FLAGS_URG],
-                "SERVER_TCP_FLAGS_ECE": [data.SERVER_TCP_FLAGS_ECE],
-                "SERVER_TCP_FLAGS_CWR": [data.SERVER_TCP_FLAGS_CWR],
-                "MIN_TTL": [data.MIN_TTL],
-                "MAX_TTL": [data.MAX_TTL],
-                "NUM_PKTS_UP_TO_128_BYTES": [data.NUM_PKTS_UP_TO_128_BYTES],
-                "NUM_PKTS_128_TO_256_BYTES": [data.NUM_PKTS_128_TO_256_BYTES],
-                "NUM_PKTS_256_TO_512_BYTES": [data.NUM_PKTS_256_TO_512_BYTES],
-                "NUM_PKTS_512_TO_1024_BYTES": [data.NUM_PKTS_512_TO_1024_BYTES],
-                "NUM_PKTS_1024_TO_1514_BYTES": [data.NUM_PKTS_1024_TO_1514_BYTES],
-                "Label": [data.Label],
-                "Attack_label": [data.Attack_label]
-            }
+            "input1": [{
+                "L4_SRC_PORT": data.L4_SRC_PORT,
+                "L4_DST_PORT": data.L4_DST_PORT,
+                "PROTOCOL": data.PROTOCOL,
+                "L7_PROTO": data.L7_PROTO,
+                "IN_BYTES": data.IN_BYTES,
+                "IN_PKTS": data.IN_PKTS,
+                "OUT_BYTES": data.OUT_BYTES,
+                "OUT_PKTS": data.OUT_PKTS,
+                "FLOW_DURATION_MILLISECONDS": data.FLOW_DURATION_MILLISECONDS,
+                "DURATION_IN": data.DURATION_IN,
+                "DURATION_OUT": data.DURATION_OUT,
+                "TCP_WIN_MAX_IN": data.TCP_WIN_MAX_IN,
+                "TCP_WIN_MAX_OUT": data.TCP_WIN_MAX_OUT,
+                "LONGEST_FLOW_PKT": data.LONGEST_FLOW_PKT,
+                "SHORTEST_FLOW_PKT": data.SHORTEST_FLOW_PKT,
+                "MIN_IP_PKT_LEN": data.MIN_IP_PKT_LEN,
+                "SRC_TO_DST_AVG_THROUGHPUT": data.SRC_TO_DST_AVG_THROUGHPUT,
+                "DST_TO_SRC_AVG_THROUGHPUT": data.DST_TO_SRC_AVG_THROUGHPUT,
+                "RETRANSMITTED_IN_BYTES": data.RETRANSMITTED_IN_BYTES,
+                "RETRANSMITTED_IN_PKTS": data.RETRANSMITTED_IN_PKTS,
+                "RETRANSMITTED_OUT_BYTES": data.RETRANSMITTED_OUT_BYTES,
+                "RETRANSMITTED_OUT_PKTS": data.RETRANSMITTED_OUT_PKTS,
+                "TCP_FLAGS_FIN": data.TCP_FLAGS_FIN,
+                "TCP_FLAGS_SYN": data.TCP_FLAGS_SYN,
+                "TCP_FLAGS_RST": data.TCP_FLAGS_RST,
+                "TCP_FLAGS_PSH": data.TCP_FLAGS_PSH,
+                "TCP_FLAGS_ACK": data.TCP_FLAGS_ACK,
+                "TCP_FLAGS_URG": data.TCP_FLAGS_URG,
+                "TCP_FLAGS_ECE": data.TCP_FLAGS_ECE,
+                "TCP_FLAGS_CWR": data.TCP_FLAGS_CWR,
+                "CLIENT_TCP_FLAGS_FIN": data.CLIENT_TCP_FLAGS_FIN,
+                "CLIENT_TCP_FLAGS_SYN": data.CLIENT_TCP_FLAGS_SYN,
+                "CLIENT_TCP_FLAGS_RST": data.CLIENT_TCP_FLAGS_RST,
+                "CLIENT_TCP_FLAGS_PSH": data.CLIENT_TCP_FLAGS_PSH,
+                "CLIENT_TCP_FLAGS_ACK": data.CLIENT_TCP_FLAGS_ACK,
+                "CLIENT_TCP_FLAGS_URG": data.CLIENT_TCP_FLAGS_URG,
+                "CLIENT_TCP_FLAGS_ECE": data.CLIENT_TCP_FLAGS_ECE,
+                "CLIENT_TCP_FLAGS_CWR": data.CLIENT_TCP_FLAGS_CWR,
+                "SERVER_TCP_FLAGS_FIN": data.SERVER_TCP_FLAGS_FIN,
+                "SERVER_TCP_FLAGS_SYN": data.SERVER_TCP_FLAGS_SYN,
+                "SERVER_TCP_FLAGS_RST": data.SERVER_TCP_FLAGS_RST,
+                "SERVER_TCP_FLAGS_PSH": data.SERVER_TCP_FLAGS_PSH,
+                "SERVER_TCP_FLAGS_ACK": data.SERVER_TCP_FLAGS_ACK,
+                "SERVER_TCP_FLAGS_URG": data.SERVER_TCP_FLAGS_URG,
+                "SERVER_TCP_FLAGS_ECE": data.SERVER_TCP_FLAGS_ECE,
+                "SERVER_TCP_FLAGS_CWR": data.SERVER_TCP_FLAGS_CWR,
+                "MIN_TTL": data.MIN_TTL,
+                "MAX_TTL": data.MAX_TTL,
+                "NUM_PKTS_UP_TO_128_BYTES": data.NUM_PKTS_UP_TO_128_BYTES,
+                "NUM_PKTS_128_TO_256_BYTES": data.NUM_PKTS_128_TO_256_BYTES,
+                "NUM_PKTS_256_TO_512_BYTES": data.NUM_PKTS_256_TO_512_BYTES,
+                "NUM_PKTS_512_TO_1024_BYTES": data.NUM_PKTS_512_TO_1024_BYTES,
+                "NUM_PKTS_1024_TO_1514_BYTES": data.NUM_PKTS_1024_TO_1514_BYTES,
+            }]
         },
         "GlobalParameters": {}
     }
 
-    # 1단계: 이진분류 (공격인지 정상인지)
     # 1단계: 이진분류 (공격인지 정상인지)
     binary_response = requests.post(
         url=BINARY_URL,
@@ -160,8 +150,11 @@ def predict(data: TrafficData):
         json=input_data
     )
     binary_result = binary_response.json()
-    print("이진분류 원본 결과:", binary_result)  # 추가
-    is_attack = binary_result.get("result", [0])[0] == 1
+    print("이진분류 원본 결과:", binary_result)
+
+    # Azure ML Designer 응답 형식: {"Results": {"output1": [{"Scored Labels": "0or1", ...}]}}
+    scored_label = binary_result["Results"]["output1"][0]["Scored Labels"]
+    is_attack = str(scored_label) == "1"
 
     # 정상이면 바로 반환
     if not is_attack:
@@ -180,7 +173,10 @@ def predict(data: TrafficData):
         json=input_data
     )
     multi_result = multi_response.json()
-    attack_type = multi_result.get("result", ["unknown"])[0]
+    print("다중분류 원본 결과:", multi_result)
+
+    # Azure ML Designer 응답 형식: {"Results": {"output1": [{"Scored Labels": "공격유형", ...}]}}
+    attack_type = multi_result["Results"]["output1"][0]["Scored Labels"]
 
     return {
         "is_attack": True,
