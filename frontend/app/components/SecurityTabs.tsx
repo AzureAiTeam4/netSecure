@@ -75,6 +75,16 @@ function formatDate(date: Date) {
   ].join("-");
 }
 
+function createRangeEndDate(dateString: string) {
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return new Date(fallbackRefreshTime);
+  }
+
+  return new Date(year, month - 1, day, 23, 59, 59);
+}
+
 export default function SecurityTabs() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [eventListFilters, setEventListFilters] = useState<EventListFilters>(defaultEventListFilters);
@@ -85,11 +95,18 @@ export default function SecurityTabs() {
     getServerRefreshTime,
   );
 
-  const [manualRefreshTime, setManualRefreshTime] = useState("");
+  const defaultRangeEndDate = useMemo(
+    () => formatDate(new Date(hydratedRefreshTime || fallbackRefreshTime)),
+    [hydratedRefreshTime],
+  );
+
+  const [selectedRangeEndDate, setSelectedRangeEndDate] = useState("");
+
+  const rangeEndDateValue = selectedRangeEndDate || defaultRangeEndDate;
 
   const lastUpdated = useMemo(
-    () => new Date(manualRefreshTime || hydratedRefreshTime || fallbackRefreshTime),
-    [hydratedRefreshTime, manualRefreshTime],
+    () => createRangeEndDate(rangeEndDateValue),
+    [rangeEndDateValue],
   );
 
   const title = useMemo(
@@ -108,7 +125,7 @@ export default function SecurityTabs() {
   const ActiveView = views[activeTab];
 
   const refreshData = () => {
-    setManualRefreshTime(new Date().toISOString());
+    setSelectedRangeEndDate(formatDate(new Date()));
   };
 
   function moveTab(tabId: TabId, filters?: EventListFilters) {
@@ -193,13 +210,20 @@ export default function SecurityTabs() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 text-sm">
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700"
-              >
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
+                <span className="text-xs font-medium text-slate-500">조회 종료일</span>
+                <input
+                  type="date"
+                  value={rangeEndDateValue}
+                  onChange={(event) => setSelectedRangeEndDate(event.target.value)}
+                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
+                />
+              </label>
+
+              <div className="flex h-10 items-center rounded-md border border-slate-200 px-4 text-slate-700">
                 {formatDate(rangeStart)} ~ {formatDate(lastUpdated)}
-              </button>
+              </div>
 
               <button
                 type="button"
