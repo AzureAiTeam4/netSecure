@@ -24,6 +24,7 @@
 | 클리닝 | `preprocess_01_cleaning.py` | 피처 제거, 클리핑, TCP_FLAGS 비트 분해, Z-score 정규화 |
 | 최종 변환 | `preprocess_02_finalize.py` | Azure ML 업로드용 `final_dataset.csv` 생성 |
 | 공격 추출 | `prepare_attack_data.py` | 공격 행만 분리 → `attack_only_dataset.csv` |
+| 서비스용 더미데이터 | `preprocess_dummy.py` | 더미 데이터 전처리 → 레이블 제거 후 `dummy_final.csv` 생성 |
 
 ### 클리닝 세부 내용
 
@@ -56,6 +57,7 @@ data_analysis/
 ├── preprocess_01_cleaning.py       # 클리닝 및 정규화
 ├── preprocess_02_finalize.py       # Azure ML 업로드용 변환
 ├── prepare_attack_data.py          # 공격 전용 데이터 추출
+├── preprocess_dummy.py             # 더미 데이터 전처리 (서비스용)
 ├── eda_01_raw_distribution.py      # 클래스 분포 확인
 ├── eda_02_feature_analysis.py      # 피처 분석
 ├── eda_03_attack_distribution.py   # 공격 유형별 분포 (정규화)
@@ -66,7 +68,9 @@ data_analysis/
 │   ├── sampled_dataset.csv
 │   ├── cleaned_dataset.csv
 │   ├── final_dataset.csv
-│   └── attack_only_dataset.csv
+│   ├── attack_only_dataset.csv
+│   ├── dummy_50000.csv             # 추론용 더미 데이터 (원본)
+│   └── dummy_final.csv             # 추론용 더미 데이터 (전처리 완료)
 ├── figures/                        # 시각화 결과 (gitignore)
 ├── logs/                           # 실행 로그 (gitignore)
 └── analysis_results/               # EDA 분석 결과 (gitignore)
