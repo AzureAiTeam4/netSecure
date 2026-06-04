@@ -1,13 +1,6 @@
-//탭3. 통계
-
+import type { EventRow } from "../widgets/data";
 import StatsOverview from "../widgets/StatsOverview";
-import SummaryGrid from "../widgets/SummaryGrid";
 
-export default function StatsView() {
-  return (
-    <>
-      <SummaryGrid />
-      <StatsOverview expanded />
-    </>
-  );
+export default function StatsView({ eventRows }: { eventRows: EventRow[] }) {
+  return <StatsOverview expanded eventRows={eventRows} />;
 }

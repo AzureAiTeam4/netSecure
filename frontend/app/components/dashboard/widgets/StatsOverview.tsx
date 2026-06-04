@@ -1,74 +1,289 @@
-//통계 자료 3개
-
-import { attackBars } from "./data";
+import type { EventRow } from "./data";
 import Panel from "./Panel";
+import StatusBadge from "./StatusBadge";
 
-export default function StatsOverview({ expanded = false }: { expanded?: boolean }) {
+function getCountMap(values: string[]) {
+  return values.reduce<Record<string, number>>((acc, value) => {
+    acc[value] = (acc[value] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
+function getSortedEntries(counts: Record<string, number>) {
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+}
+
+function getAverageConfidence(eventRows: EventRow[]) {
+  if (eventRows.length === 0) return "0%";
+
+  const sum = eventRows.reduce((acc, row) => {
+    const value = Number(row[6]);
+    return acc + (Number.isNaN(value) ? 0 : value);
+  }, 0);
+
+  const average = sum / eventRows.length;
+
+  if (average <= 1) {
+    return `${Math.round(average * 100)}%`;
+  }
+
+  return `${Math.round(average)}%`;
+}
+
+function getMostFrequentValue(entries: Array<[string, number]>) {
+  return entries[0] ?? ["없음", 0];
+}
+
+function getPercentage(count: number, total: number) {
+  if (total === 0) return "0%";
+  return `${Math.round((count / total) * 100)}%`;
+}
+
+function getRiskTone(value: string) {
+  if (value === "High") {
+    return {
+      bar: "bg-rose-500",
+      text: "text-rose-600",
+      bg: "bg-rose-50",
+      border: "border-rose-100",
+    };
+  }
+
+  if (value === "Medium") {
+    return {
+      bar: "bg-amber-500",
+      text: "text-amber-600",
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+    };
+  }
+
+  if (value === "Low") {
+    return {
+      bar: "bg-emerald-500",
+      text: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+    };
+  }
+
+  return {
+    bar: "bg-slate-400",
+    text: "text-slate-700",
+    bg: "bg-slate-50",
+    border: "border-slate-200",
+  };
+}
+
+function getAttackPriorityText(attackType: string) {
+  if (attackType === "Injection" || attackType === "XSS" || attackType === "Password") {
+    return "text-slate-950";
+  }
+
+  return "text-slate-700";
+}
+
+function StatCard({
+  label,
+  value,
+  note,
+  emphasis = false,
+}: {
+  label: string;
+  value: string;
+  note: string;
+  emphasis?: boolean;
+}) {
   return (
-    <section
-      className={`grid gap-5 ${
-        expanded
-          ? "xl:grid-cols-3"
-          : "xl:grid-cols-[minmax(420px,1.4fr)_minmax(280px,1fr)_minmax(280px,1fr)]"
+    <div
+      className={`rounded-lg border px-4 py-4 ${
+        emphasis ? "border-rose-100 bg-rose-50" : "border-slate-200 bg-slate-50"
       }`}
     >
-      <div>
-        <Panel title="공격 유형별 이벤트 수">
-          <div className="flex h-64 items-end gap-2 px-1 pb-3 pt-4 sm:gap-3">
-            {attackBars.map(([label, value, color]) => (
-              <div key={label} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2 text-center">
-                <div className="text-xs font-semibold text-slate-600">{value}</div>
-                <div className={`${color} mx-auto w-full max-w-10 rounded-t-md sm:max-w-12`} style={{ height: `${value / 8}px` }} />
-                <div className="min-h-8 break-words text-[11px] text-slate-500 sm:text-xs">{label}</div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-      <Panel title="공격 카테고리별 비율">
-        <DonutChart
-          gradient="#2563eb 0 37%, #10b981 37% 69%, #f59e0b 69% 100%"
-          segments={[
-            ["웹 공격", "37.3%", "bg-blue-500"],
-            ["탐색 공격", "32.0%", "bg-emerald-500"],
-            ["인증 공격", "30.7%", "bg-amber-400"],
-          ]}
-        />
-      </Panel>
-      <Panel title="위험도별 이벤트 비율">
-        <DonutChart
-          gradient="#ef4444 0 27%, #fb923c 27% 67%, #10b981 67% 100%"
-          segments={[
-            ["High", "27.3%", "bg-red-500"],
-            ["Medium", "39.3%", "bg-orange-400"],
-            ["Low", "33.3%", "bg-emerald-500"],
-          ]}
-        />
-      </Panel>
-    </section>
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className={`mt-2 text-xl font-bold ${emphasis ? "text-rose-600" : "text-slate-950"}`}>
+        {value}
+      </p>
+      <p className="mt-2 text-xs text-slate-500">{note}</p>
+    </div>
   );
 }
 
-function DonutChart({
-  gradient,
-  segments,
+function RankedList({
+  items,
+  total,
+  type = "default",
 }: {
-  gradient: string;
-  segments: Array<[string, string, string]>;
+  items: Array<[string, number]>;
+  total: number;
+  type?: "default" | "ip";
 }) {
   return (
-    <div className="flex min-h-64 items-center justify-center gap-8">
-      <div className="h-36 w-36 rounded-full p-8" style={{ background: `conic-gradient(${gradient})` }}>
-        <div className="h-full w-full rounded-full bg-white" />
-      </div>
-      <div className="space-y-3 text-sm">
-        {segments.map(([label, value, color]) => (
-          <div key={label} className="flex items-center gap-3">
-            <span className={`h-3 w-3 rounded-full ${color}`} />
-            <span className="w-20 text-slate-600">{label}</span>
-            <span className="font-semibold">{value}</span>
+    <div className="divide-y divide-slate-100">
+      {items.map(([label, count], index) => (
+        <div key={label} className="flex items-center justify-between gap-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500">
+              {index + 1}
+            </span>
+
+            <div className="min-w-0">
+              <p
+                className={`truncate text-sm font-semibold ${
+                  type === "default" ? getAttackPriorityText(label) : "font-mono text-slate-800"
+                }`}
+              >
+                {label}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {getPercentage(count, total)} 비중
+              </p>
+            </div>
           </div>
-        ))}
+
+          <p className="shrink-0 text-sm font-bold text-slate-950">
+            {count.toLocaleString()}건
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RiskDistribution({
+  items,
+  total,
+}: {
+  items: Array<[string, number]>;
+  total: number;
+}) {
+  return (
+    <div className="space-y-4">
+      {items.map(([label, count]) => {
+        const tone = getRiskTone(label);
+        const width = total === 0 ? 0 : Math.max(4, (count / total) * 100);
+
+        return (
+          <div key={label} className={`rounded-lg border px-4 py-3 ${tone.bg} ${tone.border}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <StatusBadge value={label} />
+              <div className="text-right">
+                <p className={`text-sm font-bold ${tone.text}`}>
+                  {count.toLocaleString()}건
+                </p>
+                <p className="text-xs text-slate-500">{getPercentage(count, total)}</p>
+              </div>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-white/80">
+              <div
+                className={`h-full rounded-full ${tone.bar}`}
+                style={{ width: `${width}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function StatsOverview({
+  expanded = false,
+  eventRows,
+}: {
+  expanded?: boolean;
+  eventRows: EventRow[];
+}) {
+  const attackRows = eventRows.filter((row) => row[4] !== "Benign");
+  const highRiskRows = eventRows.filter((row) => row[7] === "High");
+
+  const attackEntries = getSortedEntries(getCountMap(attackRows.map((row) => row[4])));
+  const riskEntries = getSortedEntries(getCountMap(eventRows.map((row) => row[7])));
+  const highRiskAttackEntries = getSortedEntries(
+    getCountMap(highRiskRows.map((row) => row[4])),
+  );
+  const sourceIpEntries = getSortedEntries(
+    getCountMap(attackRows.map((row) => row[2])),
+  ).slice(0, 5);
+
+  const [topAttackType, topAttackCount] = getMostFrequentValue(attackEntries);
+  const [topSourceIp, topSourceIpCount] = getMostFrequentValue(sourceIpEntries);
+
+  return (
+    <div className={expanded ? "space-y-5" : "grid gap-5 xl:grid-cols-3"}>
+      <Panel title="통계 요약" action="현재 이벤트 데이터 기준">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="최다 공격 유형"
+            value={topAttackType}
+            note={`${topAttackCount.toLocaleString()}건 발생`}
+          />
+
+          <StatCard
+            label="High 위험 이벤트"
+            value={`${highRiskRows.length.toLocaleString()}건`}
+            note="우선 대응 검토 대상"
+            emphasis
+          />
+
+          <StatCard
+            label="최다 출발지 IP"
+            value={topSourceIp}
+            note={`${topSourceIpCount.toLocaleString()}건 반복 발생`}
+          />
+
+          <StatCard
+            label="평균 예측 신뢰도"
+            value={getAverageConfidence(eventRows)}
+            note="모델 예측 결과 기준"
+          />
+        </div>
+      </Panel>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Panel title="공격 유형별 이벤트 수" action={`${attackRows.length.toLocaleString()}건`}>
+          <RankedList
+            items={attackEntries}
+            total={attackRows.length}
+          />
+        </Panel>
+
+        <Panel title="위험도 분포" action={`${eventRows.length.toLocaleString()}건`}>
+          <RiskDistribution
+            items={riskEntries}
+            total={eventRows.length}
+          />
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="공격 유형별 High 위험 이벤트" action={`${highRiskRows.length.toLocaleString()}건`}>
+          {highRiskAttackEntries.length > 0 ? (
+            <RankedList
+              items={highRiskAttackEntries}
+              total={highRiskRows.length}
+            />
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              High 위험도로 분류된 공격 이벤트가 없습니다.
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="상위 출발지 IP Top 5" action="공격 이벤트 기준">
+          {sourceIpEntries.length > 0 ? (
+            <RankedList
+              items={sourceIpEntries}
+              total={attackRows.length}
+              type="ip"
+            />
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              공격 이벤트 기준 출발지 IP가 없습니다.
+            </div>
+          )}
+        </Panel>
       </div>
     </div>
   );
