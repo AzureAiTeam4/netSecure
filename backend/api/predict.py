@@ -138,13 +138,6 @@ def predict(data: TrafficData):
                 "NUM_PKTS_256_TO_512_BYTES": data.NUM_PKTS_256_TO_512_BYTES,
                 "NUM_PKTS_512_TO_1024_BYTES": data.NUM_PKTS_512_TO_1024_BYTES,
                 "NUM_PKTS_1024_TO_1514_BYTES": data.NUM_PKTS_1024_TO_1514_BYTES,
-<<<<<<< HEAD
-                "Label": 0,
-                "Attack_label": 0,
-                
-                
-=======
->>>>>>> 9dd75a6778bb47a9fea8bddf1d7216ce10349b79
             }]
         },
         "GlobalParameters": {}
@@ -159,26 +152,11 @@ def predict(data: TrafficData):
     binary_result = binary_response.json()
     print("이진분류 원본 결과:", binary_result)
 
-<<<<<<< HEAD
-    # 에러 체크
-    if "error" in binary_result:
-        return {"is_attack": False, "attack_type": "Benign", "risk": "LOW", "src_ip": data.src_ip, "dst_ip": data.dst_ip}
-
-    scored_label = binary_result["Results"]["WebServiceOutput1"][0]["Scored Labels"]
-    is_attack = str(scored_label) == "1" or float(scored_label) == 1.0  # 이렇게 수정
-    '''
-    binary_result = binary_response.json()
-    print("이진분류 원본 결과:", binary_result)
 
     # Azure ML Designer 응답 형식: {"Results": {"output1": [{"Scored Labels": "0or1", ...}]}}
     scored_label = binary_result["Results"]["output1"][0]["Scored Labels"]
     is_attack = str(scored_label) == "1"
-    '''
-=======
-    # Azure ML Designer 응답 형식: {"Results": {"output1": [{"Scored Labels": "0or1", ...}]}}
-    scored_label = binary_result["Results"]["output1"][0]["Scored Labels"]
-    is_attack = str(scored_label) == "1"
->>>>>>> 9dd75a6778bb47a9fea8bddf1d7216ce10349b79
+
 
     # 정상이면 바로 반환
     if not is_attack:
@@ -214,36 +192,12 @@ def predict(data: TrafficData):
         json=multi_input_data  # multi_input_data 사용
     )
     multi_result = multi_response.json()
-<<<<<<< HEAD
-    print("===== 다중분류 결과 =====")
-    print(multi_result)
 
-    if "error" in multi_result:
-        return {
-            "is_attack": True,
-            "attack_type": "Unknown",
-            "risk": "HIGH",
-            "azure_error": multi_result["error"]["message"]
-        }
-
-    attack_map = {
-    1: "Injection",
-    2: "Password",
-    3: "Reconnaissance",
-    4: "Scanning",
-    5: "XSS"
-}
-
-    pred = int(float(multi_result["Results"]["WebServiceOutput0"][0]["Scored Labels"]))
-
-    attack_type = attack_map.get(pred, "Unknown")
-
-=======
     print("다중분류 원본 결과:", multi_result)
 
     # Azure ML Designer 응답 형식: {"Results": {"output1": [{"Scored Labels": "공격유형", ...}]}}
     attack_type = multi_result["Results"]["output1"][0]["Scored Labels"]
->>>>>>> 9dd75a6778bb47a9fea8bddf1d7216ce10349b79
+
 
     return {
         "is_attack": True,

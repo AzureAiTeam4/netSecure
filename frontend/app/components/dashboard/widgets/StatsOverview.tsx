@@ -83,6 +83,20 @@ function getAttackPriorityText(attackType: string) {
   return "text-slate-700";
 }
 
+const attackPalette: Record<string, string> = {
+  Injection: "#ef4444",
+  XSS: "#f59e0b",
+  Password: "#8b5cf6",
+  Scanning: "#2563eb",
+  Reconnaissance: "#10b981",
+};
+
+const fallbackPalette = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+
+function getAttackColor(label: string, index: number) {
+  return attackPalette[label] ?? fallbackPalette[index % fallbackPalette.length];
+}
+
 function StatCard({
   label,
   value,
@@ -105,6 +119,107 @@ function StatCard({
         {value}
       </p>
       <p className="mt-2 text-xs text-slate-500">{note}</p>
+    </div>
+  );
+}
+
+function AttackTypeDonut({
+  items,
+  total,
+}: {
+  items: Array<[string, number]>;
+  total: number;
+}) {
+  const size = 204;
+  const center = size / 2;
+  const radius = 74;
+  const strokeWidth = 44;
+  const circumference = 2 * Math.PI * radius;
+
+  const segments = items.map(([label, count], index) => ({
+    label,
+    count,
+    color: getAttackColor(label, index),
+    percentage: total === 0 ? 0 : (count / total) * 100,
+  }));
+
+  const renderedSegments = segments.reduce<
+    Array<(typeof segments)[number] & {
+      length: number;
+      labelX: number;
+      labelY: number;
+      offset: number;
+    }>
+  >((acc, segment) => {
+    const previousOffset = acc.reduce((sum, item) => sum + item.length, 0);
+    const length = (segment.percentage / 100) * circumference;
+    const middle = previousOffset + length / 2;
+    const angle = (middle / circumference) * 360 - 90;
+    const labelRadius = radius;
+    const labelX = center + Math.cos((angle * Math.PI) / 180) * labelRadius;
+    const labelY = center + Math.sin((angle * Math.PI) / 180) * labelRadius;
+
+    return [...acc, {
+      ...segment,
+      length,
+      labelX,
+      labelY,
+      offset: previousOffset,
+    }];
+  }, []);
+
+  return (
+    <div className="grid min-h-[280px] place-content-center items-center gap-x-9 gap-y-4 pt-5 sm:grid-cols-[204px_auto]">
+      <svg
+        className="mx-auto h-[204px] w-[204px]"
+        viewBox={`0 0 ${size} ${size}`}
+        role="img"
+        aria-label="공격 유형별 이벤트 비율"
+      >
+        {renderedSegments.map((segment) => (
+          <circle
+            key={segment.label}
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={segment.color}
+            strokeDasharray={`${Math.max(0, segment.length - 3)} ${circumference}`}
+            strokeDashoffset={-segment.offset}
+            strokeWidth={strokeWidth}
+            transform={`rotate(-90 ${center} ${center})`}
+          />
+        ))}
+
+        {renderedSegments.map((segment) => (
+          <text
+            key={`${segment.label}-label`}
+            x={segment.labelX}
+            y={segment.labelY}
+            className="fill-white text-[11px] font-bold"
+            dominantBaseline="middle"
+            textAnchor="middle"
+          >
+            {segment.percentage.toFixed(1)}%
+          </text>
+        ))}
+      </svg>
+
+      <div className="space-y-2 justify-self-center sm:justify-self-start">
+        {segments.map((segment) => (
+          <div key={segment.label} className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: segment.color }}
+              />
+              <span className="truncate text-sm font-semibold text-slate-700">
+                {segment.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -241,9 +356,16 @@ export default function StatsOverview({
         </div>
       </Panel>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(220px,0.7fr)_minmax(280px,0.8fr)_380px]">
         <Panel title="공격 유형별 이벤트 수" action={`${attackRows.length.toLocaleString()}건`}>
           <RankedList
+            items={attackEntries}
+            total={attackRows.length}
+          />
+        </Panel>
+
+        <Panel title="공격 유형별 비율" action="공격 유형 분포">
+          <AttackTypeDonut
             items={attackEntries}
             total={attackRows.length}
           />

@@ -157,7 +157,7 @@ export default function SecurityTabs() {
   const [selectedStartDate, setSelectedStartDate] = useState("");
   const [selectedEndDate, setSelectedEndDate] = useState("");
 
-  const [currentRefreshTime, setCurrentRefreshTime] = useState(() => new Date());
+  const [currentRefreshTime, setCurrentRefreshTime] = useState<Date | null>(null);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
@@ -168,6 +168,10 @@ export default function SecurityTabs() {
   );
 
   const ActiveView = views[activeTab];
+
+  useEffect(() => {
+  setCurrentRefreshTime(new Date());
+  }, []);
 
   useEffect(() => {
     const API_BASE_URL =
@@ -227,6 +231,18 @@ export default function SecurityTabs() {
   const refreshCurrentTime = () => {
     setCurrentRefreshTime(new Date());
   };
+
+  const today = new Date();
+
+const weekAgo = new Date();
+weekAgo.setDate(today.getDate() - 6);
+
+const formatDate = (date) => {
+  return date.toISOString().split("T")[0];
+};
+
+const startDate = formatDate(weekAgo);
+const endDate = formatDate(today);
 
   const resetToRecentWeek = () => {
     const dataEndDate = toDateInputValue(dataRange?.end);
@@ -301,7 +317,9 @@ export default function SecurityTabs() {
         <div className="m-4 rounded-lg border border-white/10 bg-[#091327] p-4 text-xs">
           <p className="text-slate-400">마지막 새로고침</p>
           <p className="mt-2 font-medium text-white">
-            {formatCurrentTime(currentRefreshTime)}
+            {currentRefreshTime
+            ? formatCurrentTime(currentRefreshTime)
+            : "-"}
           </p>
           <button
             type="button"
@@ -325,43 +343,15 @@ export default function SecurityTabs() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
-                <span className="text-xs font-medium text-slate-500">조회 시작일</span>
-                <input
-                  type="date"
-                  value={selectedStartDate}
-                  min={formatDateLabel(dataRange?.start)}
-                  max={selectedEndDate || formatDateLabel(dataRange?.end)}
-                  onChange={(event) => setSelectedStartDate(event.target.value)}
-                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
-                />
-              </label>
-
-              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
-                <span className="text-xs font-medium text-slate-500">조회 종료일</span>
-                <input
-                  type="date"
-                  value={selectedEndDate}
-                  min={selectedStartDate || formatDateLabel(dataRange?.start)}
-                  max={formatDateLabel(dataRange?.end)}
-                  onChange={(event) => setSelectedEndDate(event.target.value)}
-                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
-                />
-              </label>
-
+            <div className="flex items-center gap-2 text-sm">
               <div className="flex h-10 items-center rounded-md border border-slate-200 px-4 text-slate-700">
-                {selectedStartDate || "-"} ~ {selectedEndDate || "-"}
-              </div>
+                <span className="mr-2 text-xs font-medium text-slate-500">
+                  조회 기간
+                </span>
 
-              <button
-                type="button"
-                onClick={resetToRecentWeek}
-                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
-              >
-                최근 1주일
-              </button>
-            </div>
+                {startDate} ~ {endDate}
+              </div>
+            </div> 
           </header>
 
           {isLoadingEvents ? (
