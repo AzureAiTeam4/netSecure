@@ -23,3 +23,5 @@ data_analysis/logs/
 data_analysis/figures/
 data_analysis/*.zip
 data_analysis/*.csv
+
+backend/data/dummy_final_with_date.csv
