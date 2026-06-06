@@ -154,12 +154,12 @@ export default function ReportsView({
       - 백엔드 주소가 다르면 frontend/.env.local의 NEXT_PUBLIC_API_BASE_URL만 수정하면 된다.
     */
 
-    /*
+    
     setIsLoading(true);
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/report/${selectedEvent[0]}`,
+        `${API_BASE_URL}/api/report/${selectedEvent[0]}?attack_type=${selectedEvent[4]}`,
       );
 
       if (!response.ok) {
@@ -173,7 +173,7 @@ export default function ReportsView({
     } finally {
       setIsLoading(false);
     }
-    */
+    
   }
 
   function handleChooseAnotherEvent() {

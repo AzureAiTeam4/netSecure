@@ -1,4 +1,4 @@
-from schemas import SecurityEvent
+from .schemas import SecurityEvent
 
 import json
 from datetime import datetime
