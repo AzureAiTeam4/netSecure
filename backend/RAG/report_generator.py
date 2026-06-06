@@ -2,10 +2,10 @@ import json
 import re
 import logging
 from openai import AzureOpenAI
-import config
-from schemas import SecurityEvent, SecurityReport
-from search_client import search_documents
-from prompt_builder import build_search_query, build_system_prompt, build_user_prompt
+from . import config
+from .schemas import SecurityEvent, SecurityReport
+from .search_client import search_documents
+from .prompt_builder import build_search_query, build_system_prompt, build_user_prompt
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 from azure.search.documents.models import QueryType
-import config
+from . import config
 
 _client = SearchClient(
     endpoint=config.AZURE_SEARCH_ENDPOINT,

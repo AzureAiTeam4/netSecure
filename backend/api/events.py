@@ -1,29 +1,37 @@
-from fastapi import APIRouter  # FastAPI에서 라우터(경로 묶음) 기능 가져오기
-from datetime import datetime  # 현재 시간 사용하기 위해 가져오기
+from pathlib import Path
 
-router = APIRouter()  # 라우터 객체 생성 (main.py에 연결할 거예요)
+import pandas as pd
+from fastapi import APIRouter
 
-# GET /api/events 요청이 오면 이 함수 실행
-# 프론트엔드에서 이벤트 목록 요청할 때 사용
+router = APIRouter()
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+PROCESSED_CSV_PATH = BASE_DIR / "data" / "processed_events.csv"
+
+
 @router.get("/api/events")
 def get_events():
-    return {
-        "events": [
-            {
-                "id": 1,  # 이벤트 고유 번호
-                "time": datetime.now().isoformat(),  # 탐지 시간
-                "src_ip": "192.168.1.100",  # 공격 출발지 IP
-                "attack_type": "DDoS",  # 공격 유형
-                "risk": "HIGH",  # 위험도
-                "status": "탐지됨"  # 현재 상태
+    if not PROCESSED_CSV_PATH.exists():
+        return {
+            "data_range": {
+                "start": "",
+                "end": "",
             },
-            {
-                "id": 2,
-                "time": datetime.now().isoformat(),
-                "src_ip": "192.168.1.200",
-                "attack_type": "XSS",
-                "risk": "MEDIUM",
-                "status": "탐지됨"
-            }
-        ]
+            "events": [],
+        }
+
+    df = pd.read_csv(PROCESSED_CSV_PATH)
+
+    # 프론트 성능을 위해 일단 3000개만 반환
+    # 전체 5만 개가 필요하면 이 줄을 제거하거나 숫자 변경
+    df = df.head(3000)
+
+    events = df.to_dict(orient="records")
+
+    return {
+        "data_range": {
+            "start": str(events[0]["timestamp"]) if events else "",
+            "end": str(events[-1]["timestamp"]) if events else "",
+        },
+        "events": events,
     }

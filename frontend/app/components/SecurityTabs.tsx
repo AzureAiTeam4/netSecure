@@ -2,8 +2,13 @@
 
 "use client";
 
-import { type ComponentType, useMemo, useState, useSyncExternalStore } from "react";
-import { generateEventRows, navigation, type EventRow, type TabId } from "./dashboard/widgets/data";
+import {
+  type ComponentType,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { navigation, type EventRow, type TabId } from "./dashboard/widgets/data";
 import type { EventListFilters } from "./dashboard/widgets/EventList";
 import DashboardView from "./dashboard/tabs/DashboardView";
 import EventsView from "./dashboard/tabs/EventsView";
@@ -14,6 +19,31 @@ type ViewProps = {
   eventRows: EventRow[];
   onMoveTab?: (tabId: TabId, filters?: EventListFilters) => void;
   eventListFilters?: EventListFilters;
+};
+
+type ApiEvent = {
+  event_id: string;
+  timestamp: string;
+  source_ip: string;
+  destination_ip: string;
+  attack_type: string;
+  attack_category: string;
+  confidence: number | string;
+  risk_level: string;
+  status: string;
+};
+
+type ApiEventsResponse = {
+  data_range?: {
+    start?: string;
+    end?: string;
+  };
+  events: ApiEvent[];
+};
+
+type DataRange = {
+  start: string;
+  end: string;
 };
 
 const views: Record<TabId, ComponentType<ViewProps>> = {
@@ -32,28 +62,29 @@ const defaultEventListFilters: EventListFilters = {
   query: "",
 };
 
-const fallbackRefreshTime = "2025-05-21T14:35:22.000Z";
+function toDateInputValue(value?: string) {
+  if (!value) {
+    return "";
+  }
 
-let clientRefreshTime = "";
-
-function subscribeToClientTime(callback: () => void) {
-  const timeoutId = window.setTimeout(() => {
-    clientRefreshTime = new Date().toISOString();
-    callback();
-  }, 0);
-
-  return () => window.clearTimeout(timeoutId);
+  return String(value).slice(0, 10);
 }
 
-function getClientRefreshTime() {
-  return clientRefreshTime;
+function formatDateLabel(value?: string) {
+  const dateValue = toDateInputValue(value);
+
+  return dateValue || "-";
 }
 
-function getServerRefreshTime() {
-  return "";
+function formatDateTimeLabel(value?: string) {
+  if (!value) {
+    return "-";
+  }
+
+  return String(value).replace("T", " ");
 }
 
-function formatDateTime(date: Date) {
+function formatCurrentTime(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");
 
   return (
@@ -65,7 +96,16 @@ function formatDateTime(date: Date) {
   );
 }
 
-function formatDate(date: Date) {
+function addDays(dateString: string, amount: number) {
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return "";
+  }
+
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + amount);
+
   const pad = (value: number) => String(value).padStart(2, "0");
 
   return [
@@ -75,40 +115,130 @@ function formatDate(date: Date) {
   ].join("-");
 }
 
+function isDateInRange(timestamp: string, startDate: string, endDate: string) {
+  const eventDate = toDateInputValue(timestamp);
+
+  if (!eventDate) {
+    return false;
+  }
+
+  if (startDate && eventDate < startDate) {
+    return false;
+  }
+
+  if (endDate && eventDate > endDate) {
+    return false;
+  }
+
+  return true;
+}
+
+function convertApiEventToEventRow(event: ApiEvent): EventRow {
+  return [
+    String(event.event_id),
+    String(event.timestamp),
+    String(event.source_ip),
+    String(event.destination_ip),
+    String(event.attack_type),
+    String(event.attack_category),
+    Number(event.confidence).toFixed(4),
+    String(event.risk_level),
+    String(event.status),
+  ];
+}
+
 export default function SecurityTabs() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [eventListFilters, setEventListFilters] = useState<EventListFilters>(defaultEventListFilters);
 
-  const hydratedRefreshTime = useSyncExternalStore(
-    subscribeToClientTime,
-    getClientRefreshTime,
-    getServerRefreshTime,
-  );
+  const [allEventRows, setAllEventRows] = useState<EventRow[]>([]);
+  const [dataRange, setDataRange] = useState<DataRange | null>(null);
 
-  const [manualRefreshTime, setManualRefreshTime] = useState("");
+  const [selectedStartDate, setSelectedStartDate] = useState("");
+  const [selectedEndDate, setSelectedEndDate] = useState("");
 
-  const lastUpdated = useMemo(
-    () => new Date(manualRefreshTime || hydratedRefreshTime || fallbackRefreshTime),
-    [hydratedRefreshTime, manualRefreshTime],
-  );
+  const [currentRefreshTime, setCurrentRefreshTime] = useState(() => new Date());
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
 
   const title = useMemo(
     () => navigation.find((item) => item.id === activeTab)?.label ?? "대시보드",
     [activeTab],
   );
 
-  const eventRows = useMemo(() => generateEventRows(lastUpdated), [lastUpdated]);
-
-  const rangeStart = useMemo(() => {
-    const date = new Date(lastUpdated);
-    date.setDate(date.getDate() - 7);
-    return date;
-  }, [lastUpdated]);
-
   const ActiveView = views[activeTab];
 
-  const refreshData = () => {
-    setManualRefreshTime(new Date().toISOString());
+  useEffect(() => {
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+    async function fetchEvents() {
+      try {
+        setIsLoadingEvents(true);
+        setEventsError(null);
+
+        const response = await fetch(`${API_BASE_URL}/api/events`);
+
+        if (!response.ok) {
+          throw new Error("이벤트 데이터를 불러오지 못했습니다.");
+        }
+
+        const data: ApiEventsResponse = await response.json();
+        const convertedRows = data.events.map(convertApiEventToEventRow);
+
+        const apiStart = data.data_range?.start ?? convertedRows[0]?.[1] ?? "";
+        const apiEnd = data.data_range?.end ?? convertedRows[convertedRows.length - 1]?.[1] ?? "";
+
+        const nextDataRange = {
+          start: apiStart,
+          end: apiEnd,
+        };
+
+        setAllEventRows(convertedRows);
+        setDataRange(nextDataRange);
+
+        const endDate = toDateInputValue(apiEnd);
+        const startDate = endDate ? addDays(endDate, -6) : toDateInputValue(apiStart);
+
+        setSelectedStartDate(startDate);
+        setSelectedEndDate(endDate);
+      } catch (error) {
+        console.error(error);
+        setEventsError("이벤트 데이터를 불러오지 못했습니다.");
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    }
+
+    fetchEvents();
+  }, [fetchKey]);
+
+  const filteredEventRows = useMemo(() => {
+    if (!selectedStartDate && !selectedEndDate) {
+      return allEventRows;
+    }
+
+    return allEventRows.filter((eventRow) =>
+      isDateInRange(eventRow[1], selectedStartDate, selectedEndDate),
+    );
+  }, [allEventRows, selectedStartDate, selectedEndDate]);
+
+  const refreshCurrentTime = () => {
+    setCurrentRefreshTime(new Date());
+  };
+
+  const resetToRecentWeek = () => {
+    const dataEndDate = toDateInputValue(dataRange?.end);
+
+    if (!dataEndDate) {
+      setFetchKey((current) => current + 1);
+      return;
+    }
+
+    setSelectedEndDate(dataEndDate);
+    setSelectedStartDate(addDays(dataEndDate, -6));
+    setCurrentRefreshTime(new Date());
   };
 
   function moveTab(tabId: TabId, filters?: EventListFilters) {
@@ -169,14 +299,16 @@ export default function SecurityTabs() {
         </nav>
 
         <div className="m-4 rounded-lg border border-white/10 bg-[#091327] p-4 text-xs">
-          <p className="text-slate-400">마지막 업데이트</p>
-          <p className="mt-2 font-medium text-white">{formatDateTime(lastUpdated)}</p>
+          <p className="text-slate-400">마지막 새로고침</p>
+          <p className="mt-2 font-medium text-white">
+            {formatCurrentTime(currentRefreshTime)}
+          </p>
           <button
             type="button"
-            onClick={refreshData}
+            onClick={refreshCurrentTime}
             className="mt-4 h-9 w-full rounded-md border border-blue-400/30 bg-blue-500/10 text-blue-100 transition hover:border-blue-300/50 hover:bg-blue-500/20 hover:text-white active:bg-blue-500/30"
           >
-            데이터 새로고침
+            현재 시간 새로고침
           </button>
         </div>
       </aside>
@@ -193,30 +325,61 @@ export default function SecurityTabs() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 text-sm">
-              <button
-                type="button"
-                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700"
-              >
-                {formatDate(rangeStart)} ~ {formatDate(lastUpdated)}
-              </button>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
+                <span className="text-xs font-medium text-slate-500">조회 시작일</span>
+                <input
+                  type="date"
+                  value={selectedStartDate}
+                  min={formatDateLabel(dataRange?.start)}
+                  max={selectedEndDate || formatDateLabel(dataRange?.end)}
+                  onChange={(event) => setSelectedStartDate(event.target.value)}
+                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
+                />
+              </label>
+
+              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
+                <span className="text-xs font-medium text-slate-500">조회 종료일</span>
+                <input
+                  type="date"
+                  value={selectedEndDate}
+                  min={selectedStartDate || formatDateLabel(dataRange?.start)}
+                  max={formatDateLabel(dataRange?.end)}
+                  onChange={(event) => setSelectedEndDate(event.target.value)}
+                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
+                />
+              </label>
+
+              <div className="flex h-10 items-center rounded-md border border-slate-200 px-4 text-slate-700">
+                {selectedStartDate || "-"} ~ {selectedEndDate || "-"}
+              </div>
 
               <button
                 type="button"
-                onClick={refreshData}
+                onClick={resetToRecentWeek}
                 className="h-10 rounded-md border border-slate-200 px-4 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
               >
-                새로고침
+                최근 1주일
               </button>
             </div>
           </header>
 
-          <ActiveView
-            key={`${activeTab}-${lastUpdated.getTime()}`}
-            eventRows={eventRows}
-            onMoveTab={moveTab}
-            eventListFilters={eventListFilters}
-          />
+          {isLoadingEvents ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+              이벤트 데이터를 불러오는 중입니다.
+            </div>
+          ) : eventsError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-600 shadow-sm">
+              {eventsError}
+            </div>
+          ) : (
+            <ActiveView
+              key={`${activeTab}-${selectedStartDate}-${selectedEndDate}`}
+              eventRows={filteredEventRows}
+              onMoveTab={moveTab}
+              eventListFilters={eventListFilters}
+            />
+          )}
         </section>
       </main>
     </div>
