@@ -19,4 +19,4 @@
 | 데이터 전처리 / EDA | `data_analysis/` |
 | 모델 학습 | Azure ML Designer |
 | 추론 API | Azure ML 엔드포인트 (백엔드 연동) |
-| 위협 분석 / 보고서 생성 | `backend/RAG/` — Azure OpenAI + Azure AI Search (모듈 구현 완료, `/api/report` 연동 예정) |
+| 위협 분석 / 보고서 생성 | `backend/RAG/` — Azure OpenAI + Azure AI Search |

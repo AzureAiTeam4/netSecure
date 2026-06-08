@@ -41,24 +41,6 @@ RAG/
 └── test_report.py        # 5가지 공격 유형 샘플 테스트
 ```
 
-## 백엔드 연동 시 필요한 작업
+## 백엔드 연동
 
-| 항목 | 내용 |
-|------|------|
-| 패키지 설치 | `requirements.txt` 의존성을 FastAPI 가상환경에 설치 |
-| 환경변수 | `.env`의 Azure 키·엔드포인트를 FastAPI 서버 환경변수로 등록 |
-| 스키마 확정 | `schemas.py`의 `SecurityEvent`에 백엔드 DB 필드 반영 |
-| ID 처리 | 반환된 `report`에 `event_id`, `report_id`, `report_created_at` 추가 후 DB 저장 |
-
-```python
-# FastAPI 라우터에서 직접 import해서 사용 (예시)
-from RAG.report_generator import generate_security_report
-
-@router.post("/report")
-async def create_report(event: dict):
-    report = generate_security_report(event)  # event는 최소 Attack_label 포함
-    report["event_id"] = ...
-    report["report_id"] = ...
-    report["report_created_at"] = ...
-    return report
-```
+`backend/api/report.py`의 `GET /api/report/{event_id}`에서 직접 호출되어 연동
