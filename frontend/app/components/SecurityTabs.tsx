@@ -157,7 +157,7 @@ export default function SecurityTabs() {
   const [selectedStartDate, setSelectedStartDate] = useState("");
   const [selectedEndDate, setSelectedEndDate] = useState("");
 
-  const [currentRefreshTime, setCurrentRefreshTime] = useState(() => new Date());
+  const [currentRefreshTime, setCurrentRefreshTime] = useState<Date | null>(null);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [fetchKey, setFetchKey] = useState(0);
@@ -168,6 +168,10 @@ export default function SecurityTabs() {
   );
 
   const ActiveView = views[activeTab];
+
+  useEffect(() => {
+    setCurrentRefreshTime(new Date());
+  }, []);
 
   useEffect(() => {
     const API_BASE_URL =
@@ -199,7 +203,7 @@ export default function SecurityTabs() {
         setDataRange(nextDataRange);
 
         const endDate = toDateInputValue(apiEnd);
-        const startDate = endDate ? addDays(endDate, -6) : toDateInputValue(apiStart);
+        const startDate = endDate ? addDays(endDate, -2) : toDateInputValue(apiStart);
 
         setSelectedStartDate(startDate);
         setSelectedEndDate(endDate);
@@ -228,7 +232,7 @@ export default function SecurityTabs() {
     setCurrentRefreshTime(new Date());
   };
 
-  const resetToRecentWeek = () => {
+  const resetToRecentThreeDays = () => {
     const dataEndDate = toDateInputValue(dataRange?.end);
 
     if (!dataEndDate) {
@@ -237,7 +241,7 @@ export default function SecurityTabs() {
     }
 
     setSelectedEndDate(dataEndDate);
-    setSelectedStartDate(addDays(dataEndDate, -6));
+    setSelectedStartDate(addDays(dataEndDate, -2));
     setCurrentRefreshTime(new Date());
   };
 
@@ -301,7 +305,7 @@ export default function SecurityTabs() {
         <div className="m-4 rounded-lg border border-white/10 bg-[#091327] p-4 text-xs">
           <p className="text-slate-400">마지막 새로고침</p>
           <p className="mt-2 font-medium text-white">
-            {formatCurrentTime(currentRefreshTime)}
+            {currentRefreshTime ? formatCurrentTime(currentRefreshTime) : "-"}
           </p>
           <button
             type="button"
@@ -356,10 +360,10 @@ export default function SecurityTabs() {
 
               <button
                 type="button"
-                onClick={resetToRecentWeek}
-                className="h-10 rounded-md border border-slate-200 px-4 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
+                onClick={resetToRecentThreeDays}
+                className="h-10 rounded-md border border-blue-600 bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:border-blue-700 hover:bg-blue-700 active:bg-blue-800"
               >
-                최근 1주일
+                최근 3일 조회
               </button>
             </div>
           </header>
