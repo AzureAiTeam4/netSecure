@@ -1,38 +1,20 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# netSecure — 네트워크 보안 이벤트 분석 대시보드
 
-## Getting Started
+인공지능산업체특강 4조 프로젝트 프론트엔드 (Next.js + TypeScript + Tailwind CSS)
 
-First, run the development server:
+백엔드(`/api/events`, `/api/stats`, `/api/predict`, `/api/report`)에서 받은 탐지 이벤트를 대시보드로 시각화하고, 이벤트별 AI 보안 리포트를 보여준다.
+
+## 구성
+
+| 영역 | 설명 |
+|------|------|
+| `app/components/SecurityTabs.tsx` | 대시보드 전체 화면 구성, 탭 전환, 백엔드 `/api/events` 연동 |
+| `app/components/dashboard/tabs/` | 탭별 화면 — `DashboardView`, `EventsView`, `ReportsView`, `StatsView` |
+| `app/components/dashboard/widgets/` | 공용 위젯 — 이벤트 목록, 통계 카드, AI 리포트(`AiReport`), 위험 이벤트 등 |
+
+## 실행
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# netSecure
-인공지능산업체특강 4조 네트워크 보안 이벤트 분석 서비스

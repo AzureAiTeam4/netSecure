@@ -6,10 +6,10 @@
 
 | 폴더 | 역할 |
 |------|------|
-| `frontend/` | |
-| `backend/` | |
-| `data_analysis/` | |
-| `RAG/` | |
+| `frontend/` | 대시보드 UI — Next.js |
+| `backend/` | API 서버 — FastAPI, Azure ML 추론 연동, RAG 리포트 모듈 포함(`backend/RAG/`) |
+| `data_analysis/` | 데이터 전처리 및 EDA |
+| `ML_results/` | Azure ML Designer 모델 학습 결과 |
 
 ## 시스템 구성
 
@@ -19,4 +19,4 @@
 | 데이터 전처리 / EDA | `data_analysis/` |
 | 모델 학습 | Azure ML Designer |
 | 추론 API | Azure ML 엔드포인트 (백엔드 연동) |
-| 위협 분석 / 보고서 생성 | `RAG/` — Azure OpenAI + Azure AI Search |
+| 위협 분석 / 보고서 생성 | `backend/RAG/` — Azure OpenAI + Azure AI Search (모듈 구현 완료, `/api/report` 연동 예정) |
