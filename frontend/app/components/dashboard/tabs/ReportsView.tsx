@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AiReport, { type AiReportResponse } from "../widgets/AiReport";
 import type { EventRow, TabId } from "../widgets/data";
 import EventList, { type EventListFilters } from "../widgets/EventList";
@@ -97,6 +97,31 @@ export default function ReportsView({
 
   const reportRef = useRef<HTMLDivElement | null>(null);
 
+  const fetchAiReport = useCallback(async (event: EventRow) => {
+    setReport(undefined);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/report/${encodeURIComponent(
+          event[0],
+        )}?attack_type=${encodeURIComponent(event[4])}`,
+      );
+
+      if (!response.ok) {
+        throw new Error("AI 리포트를 불러오지 못했습니다.");
+      }
+
+      const data: AiReportResponse = await response.json();
+      setReport(data);
+    } catch {
+      setError("AI 리포트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const nextIsDirectReportMode = Boolean(
       eventListFilters?.openReport && eventListFilters?.focusEventId,
@@ -111,7 +136,11 @@ export default function ReportsView({
     setReport(undefined);
     setIsLoading(false);
     setError(null);
-  }, [eventRows, eventListFilters]);
+
+    if (nextIsDirectReportMode && nextEvent) {
+      fetchAiReport(nextEvent);
+    }
+  }, [eventRows, eventListFilters, fetchAiReport]);
 
   useEffect(() => {
     if (!showReport) return;
@@ -141,39 +170,7 @@ export default function ReportsView({
     if (!selectedEvent) return;
 
     setShowReport(true);
-    setReport(undefined);
-    setError(null);
-
-    /*
-      백엔드 연결 전:
-      - 아래 fetch 코드는 주석 상태로 둔다.
-      - AiReport.tsx 내부의 mock RAG 리포트가 표시된다.
-
-      백엔드 연결 후:
-      - 아래 주석을 해제하면 /api/report/{event_id}에서 실제 RAG 리포트를 받아온다.
-      - 백엔드 주소가 다르면 frontend/.env.local의 NEXT_PUBLIC_API_BASE_URL만 수정하면 된다.
-    */
-
-    
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/report/${selectedEvent[0]}?attack_type=${selectedEvent[4]}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("AI 리포트를 불러오지 못했습니다.");
-      }
-
-      const data: AiReportResponse = await response.json();
-      setReport(data);
-    } catch {
-      setError("AI 리포트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
-    }
-    
+    await fetchAiReport(selectedEvent);
   }
 
   function handleChooseAnotherEvent() {
@@ -195,7 +192,7 @@ export default function ReportsView({
                 {selectedEvent?.[0] ?? "선택 이벤트"} AI 대응 리포트
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                선택된 이벤트의 분석 대상 요약과 대응 리포트를 바로 확인합니다.
+                선택된 이벤트의 분석 대상 요약과 RAG 기반 대응 리포트를 바로 확인합니다.
               </p>
             </div>
 

@@ -4,8 +4,9 @@
 
 # 환경변수
 .env
-RAG/.env
 backend/.env
+backend/RAG/.env
+frontend/.env.local
 
 # Python
 __pycache__/
