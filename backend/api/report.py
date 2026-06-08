@@ -12,6 +12,8 @@ router = APIRouter()
 BASE_DIR = Path(__file__).resolve().parents[1]
 PROCESSED_CSV_PATH = BASE_DIR / "data" / "processed_events.csv"
 
+BENIGN_MESSAGE = "정상 트래픽입니다."
+
 
 def load_event_by_id(event_id: str) -> dict[str, Any]:
     if not PROCESSED_CSV_PATH.exists():
@@ -72,6 +74,18 @@ def build_security_event(event: dict[str, Any]) -> SecurityEvent:
     )
 
 
+def build_benign_report(event_id: str) -> dict[str, Any]:
+    return {
+        "event_id": event_id,
+        "report_summary": BENIGN_MESSAGE,
+        "report_reason": BENIGN_MESSAGE,
+        "report_impact": BENIGN_MESSAGE,
+        "report_checkpoints": [BENIGN_MESSAGE],
+        "report_response": [BENIGN_MESSAGE],
+        "report_created_at": "",
+    }
+
+
 def normalize_report_response(event_id: str, rag_result: Any) -> dict[str, Any]:
     """
     RAG 결과가 dict, pydantic model, 문자열 중 어떤 형태로 와도
@@ -127,6 +141,10 @@ def get_report(event_id: str):
     """
 
     event = load_event_by_id(event_id)
+
+    if str(event.get("attack_type", "")).strip() == "Benign":
+        return build_benign_report(event_id)
+
     security_event = build_security_event(event)
 
     try:

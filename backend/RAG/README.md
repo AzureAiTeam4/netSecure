@@ -43,4 +43,4 @@ RAG/
 
 ## 백엔드 연동
 
-`backend/api/report.py`의 `GET /api/report/{event_id}`에서 직접 호출되어 연동
+`backend/api/report.py`의 `GET /api/report/{event_id}`에서 직접 호출되어 연동. 이벤트의 `attack_type`이 `Benign`(정상 트래픽)인 경우에는 RAG를 호출하지 않고 고정 응답("정상 트래픽입니다.")을 바로 반환.

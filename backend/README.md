@@ -7,7 +7,7 @@
 | GET | `/api/events` | 더미 트래픽 데이터를 Azure ML 모델로 추론한 탐지 이벤트 목록 반환 (날짜별 층화 샘플링) |
 | GET | `/api/stats` | 대시보드 통계 반환 |
 | POST | `/api/predict` | Azure ML 엔드포인트 호출 → 공격 분류 (이진 → 다중 2단계) |
-| GET | `/api/report/{event_id}` | `processed_events.csv`에서 이벤트를 조회해 RAG 모듈(Azure AI Search + GPT-4o)로 보안 리포트 생성 |
+| GET | `/api/report/{event_id}` | `processed_events.csv`에서 이벤트를 조회해 보안 리포트 생성 — 공격 이벤트는 RAG 모듈(Azure AI Search + GPT-4o) 호출, `Benign`(정상 트래픽)은 RAG 호출 없이 고정 응답 반환 |
 
 ## 파일 구조
 
