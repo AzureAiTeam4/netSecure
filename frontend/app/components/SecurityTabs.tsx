@@ -170,7 +170,7 @@ export default function SecurityTabs() {
   const ActiveView = views[activeTab];
 
   useEffect(() => {
-  setCurrentRefreshTime(new Date());
+    setCurrentRefreshTime(new Date());
   }, []);
 
   useEffect(() => {
@@ -203,7 +203,7 @@ export default function SecurityTabs() {
         setDataRange(nextDataRange);
 
         const endDate = toDateInputValue(apiEnd);
-        const startDate = endDate ? addDays(endDate, -6) : toDateInputValue(apiStart);
+        const startDate = endDate ? addDays(endDate, -2) : toDateInputValue(apiStart);
 
         setSelectedStartDate(startDate);
         setSelectedEndDate(endDate);
@@ -232,19 +232,7 @@ export default function SecurityTabs() {
     setCurrentRefreshTime(new Date());
   };
 
-  const today = new Date();
-
-const weekAgo = new Date();
-weekAgo.setDate(today.getDate() - 6);
-
-const formatDate = (date) => {
-  return date.toISOString().split("T")[0];
-};
-
-const startDate = formatDate(weekAgo);
-const endDate = formatDate(today);
-
-  const resetToRecentWeek = () => {
+  const resetToRecentThreeDays = () => {
     const dataEndDate = toDateInputValue(dataRange?.end);
 
     if (!dataEndDate) {
@@ -253,7 +241,7 @@ const endDate = formatDate(today);
     }
 
     setSelectedEndDate(dataEndDate);
-    setSelectedStartDate(addDays(dataEndDate, -6));
+    setSelectedStartDate(addDays(dataEndDate, -2));
     setCurrentRefreshTime(new Date());
   };
 
@@ -317,9 +305,7 @@ const endDate = formatDate(today);
         <div className="m-4 rounded-lg border border-white/10 bg-[#091327] p-4 text-xs">
           <p className="text-slate-400">마지막 새로고침</p>
           <p className="mt-2 font-medium text-white">
-            {currentRefreshTime
-            ? formatCurrentTime(currentRefreshTime)
-            : "-"}
+            {currentRefreshTime ? formatCurrentTime(currentRefreshTime) : "-"}
           </p>
           <button
             type="button"
@@ -343,15 +329,43 @@ const endDate = formatDate(today);
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-sm">
-              <div className="flex h-10 items-center rounded-md border border-slate-200 px-4 text-slate-700">
-                <span className="mr-2 text-xs font-medium text-slate-500">
-                  조회 기간
-                </span>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
+                <span className="text-xs font-medium text-slate-500">조회 시작일</span>
+                <input
+                  type="date"
+                  value={selectedStartDate}
+                  min={formatDateLabel(dataRange?.start)}
+                  max={selectedEndDate || formatDateLabel(dataRange?.end)}
+                  onChange={(event) => setSelectedStartDate(event.target.value)}
+                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
+                />
+              </label>
 
-                {startDate} ~ {endDate}
+              <label className="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 px-3 text-slate-700">
+                <span className="text-xs font-medium text-slate-500">조회 종료일</span>
+                <input
+                  type="date"
+                  value={selectedEndDate}
+                  min={selectedStartDate || formatDateLabel(dataRange?.start)}
+                  max={formatDateLabel(dataRange?.end)}
+                  onChange={(event) => setSelectedEndDate(event.target.value)}
+                  className="h-8 bg-transparent text-sm font-medium text-slate-800 outline-none"
+                />
+              </label>
+
+              <div className="flex h-10 items-center rounded-md border border-slate-200 px-4 text-slate-700">
+                {selectedStartDate || "-"} ~ {selectedEndDate || "-"}
               </div>
-            </div> 
+
+              <button
+                type="button"
+                onClick={resetToRecentThreeDays}
+                className="h-10 rounded-md border border-blue-600 bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:border-blue-700 hover:bg-blue-700 active:bg-blue-800"
+              >
+                최근 3일 조회
+              </button>
+            </div>
           </header>
 
           {isLoadingEvents ? (
