@@ -8,6 +8,56 @@ load_dotenv()
 
 router = APIRouter()
 
+# 학습 데이터 기준 평균/표준편차 (Z-score 정규화용)
+MEANS = {
+    'L4_SRC_PORT': 46237.490587333334, 'L4_DST_PORT': 6601.894119555555,
+    'PROTOCOL': 8.125692, 'L7_PROTO': 8.447087715111113,
+    'IN_BYTES': 901.1828886666667, 'IN_PKTS': 6.060202888888889,
+    'OUT_BYTES': 3874.0776255555556, 'OUT_PKTS': 6.346302,
+    'FLOW_DURATION_MILLISECONDS': 840916.4904826666,
+    'DURATION_IN': 76.00220622222223, 'DURATION_OUT': 36.664164444444445,
+    'MIN_TTL': 41.02751222222222, 'MAX_TTL': 41.086209555555556,
+    'LONGEST_FLOW_PKT': 495.61374177777776, 'SHORTEST_FLOW_PKT': 50.31534,
+    'MIN_IP_PKT_LEN': 41.36580511111111,
+    'RETRANSMITTED_IN_BYTES': 66.0259588888889, 'RETRANSMITTED_IN_PKTS': 0.33080133333333334,
+    'RETRANSMITTED_OUT_BYTES': 556.1787695555555, 'RETRANSMITTED_OUT_PKTS': 0.5384028888888889,
+    'SRC_TO_DST_AVG_THROUGHPUT': 4058099.2132266667, 'DST_TO_SRC_AVG_THROUGHPUT': 10729510.099783111,
+    'NUM_PKTS_UP_TO_128_BYTES': 25.96614111111111, 'NUM_PKTS_128_TO_256_BYTES': 0.6052486666666667,
+    'NUM_PKTS_256_TO_512_BYTES': 0.5157546666666667, 'NUM_PKTS_512_TO_1024_BYTES': 0.4935366666666667,
+    'NUM_PKTS_1024_TO_1514_BYTES': 2.513063333333333,
+    'TCP_WIN_MAX_IN': 12445.618085777778, 'TCP_WIN_MAX_OUT': 18608.61968822222
+}
+
+STDS = {
+    'L4_SRC_PORT': 13329.889110085007, 'L4_DST_PORT': 14908.549853418806,
+    'PROTOCOL': 4.5465046773639886, 'L7_PROTO': 22.040122388469328,
+    'IN_BYTES': 63049.542488826184, 'IN_PKTS': 158.29421684692352,
+    'OUT_BYTES': 285468.5603674523, 'OUT_PKTS': 272.1291332292352,
+    'FLOW_DURATION_MILLISECONDS': 1704181.0959953917,
+    'DURATION_IN': 326.75058461157977, 'DURATION_OUT': 160.3270778474292,
+    'MIN_TTL': 41.812558270716686, 'MAX_TTL': 41.86872319151952,
+    'LONGEST_FLOW_PKT': 595.7529921436056, 'SHORTEST_FLOW_PKT': 23.159700523162254,
+    'MIN_IP_PKT_LEN': 21.544857427000295,
+    'RETRANSMITTED_IN_BYTES': 2443.0097966651933, 'RETRANSMITTED_IN_PKTS': 6.292493248058237,
+    'RETRANSMITTED_OUT_BYTES': 13518.81006638243, 'RETRANSMITTED_OUT_PKTS': 9.710640575942145,
+    'SRC_TO_DST_AVG_THROUGHPUT': 13328464.304241989, 'DST_TO_SRC_AVG_THROUGHPUT': 45759013.100663185,
+    'NUM_PKTS_UP_TO_128_BYTES': 1466.335847545234, 'NUM_PKTS_128_TO_256_BYTES': 14.77146534841889,
+    'NUM_PKTS_256_TO_512_BYTES': 11.425325996761421, 'NUM_PKTS_512_TO_1024_BYTES': 43.10836630927331,
+    'NUM_PKTS_1024_TO_1514_BYTES': 191.99690357739456,
+    'TCP_WIN_MAX_IN': 14370.172201370167, 'TCP_WIN_MAX_OUT': 23413.554601480195
+}
+
+def scale_record(record: dict) -> dict:
+    scaled = record.copy()
+    for col, mean in MEANS.items():
+        if col in scaled:
+            std = STDS[col]
+            val = (scaled[col] - mean) / std
+            # ±3 클리핑
+            val = max(-3, min(3, val))
+            scaled[col] = val
+    return scaled
+
 
 class TrafficData(BaseModel):
     src_ip: str = ""
@@ -223,15 +273,17 @@ def predict(data: TrafficData):
         }
 
     base_record = build_model_record(data)
+    scaled_record = scale_record(base_record)  # 스케일링 적용
 
     binary_record = {
-        **base_record,
+        **scaled_record,
         "Label": 0,
         "Attack_label": 0,
     }
 
     try:
         binary_result = call_azure_endpoint(binary_url, binary_key, binary_record)
+        print("이진분류 원본 결과:", binary_result) 
         scored_label = binary_result.get("Scored Labels")
         binary_probability = float(binary_result.get("Scored Probabilities", 0))
         is_attack = is_attack_label(scored_label)
@@ -248,7 +300,7 @@ def predict(data: TrafficData):
             }
 
         multi_record = {
-            **base_record,
+            **scaled_record,
             "Attack": 0,
             "Attack_label": 0,
         }
