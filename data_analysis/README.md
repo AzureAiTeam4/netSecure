@@ -26,7 +26,7 @@
 | 공격 추출 | `prepare_attack_data.py` | 공격 행만 분리 → `attack_only_dataset.csv` |
 | 서비스용 더미데이터 | `preprocess_dummy.py` | 더미 데이터 전처리 → 레이블 제거 후 `dummy_final.csv` 생성 |
 
-### 클리닝 세부 내용
+### 데이터 전처리
 
 | 처리 | 내용 |
 |------|------|
@@ -47,6 +47,30 @@
 | `eda_03_attack_distribution.py` | 공격 유형별 피처 분포 (정규화 값 기준) |
 | `eda_04_raw_values.py` | 정규화로 패턴이 불분명한 피처 원본값 재분석 |
 
+## 추가 - 시계열 보완 실험 (인접 플로우)
+
+5종 공격(injection/password/reconnaissance/scanning/xss)에 대해 원본 76M 행에서
+직접 재추출한 실험용 데이터셋. 인접 플로우 피처를 추가했을 때의 효과를
+동일 클래스 크기(20만 개/class)의 베이스라인과 비교
+
+| 단계 | 스크립트 | 내용 |
+|------|----------|------|
+| 인접 플로우 결합 | `preprocess_03_adjacent.py` | 동일 `IPV4_SRC_ADDR` 기준 시간순 직전 2개 플로우(과거1/과거2) 피처 결합 → 클리닝 → `adjacent_final.csv` |
+| 비교군(베이스라인) | `preprocess_04_attack_200k.py` | 기존 55컬럼 피처셋을 클래스별 20만 개로 재추출 → `attack_only_200k.csv` |
+
+### 인접 플로우 결합 규칙
+
+- 과거1/과거2 = 동일 `IPV4_SRC_ADDR`, 시간순(원본 파일 등장 순서) 기준 직전 2개 플로우
+- 직전 플로우와의 간격이 10,000 플로우 이내일 때만 사용, 부족하면 직후(미래) 플로우로 대체, 둘 다 없으면 0
+- `GAP_TO_PAST1`: 과거1 플로우와의 시간 간격(음수면 미래 플로우로 대체된 경우)
+
+### 출력 파일
+
+| 파일 | 행 수 | 컬럼 수 | 설명 |
+|------|-------|---------|------|
+| `adjacent_final.csv` | 200,000 × 5 | 179 (Attack_label 포함) | 현재/과거1/과거2 피처 + Z-score 정규화, Azure ML 업로드용 |
+| `attack_only_200k.csv` | 200,000 × 5 | 55 (Attack/Attack_label 포함) | 기존 55컬럼 피처셋, 인접 플로우 미적용 비교군 |
+
 ## 파일 구조
 
 ```
@@ -57,6 +81,8 @@ data_analysis/
 ├── preprocess_01_cleaning.py       # 클리닝 및 정규화
 ├── preprocess_02_finalize.py       # Azure ML 업로드용 변환
 ├── prepare_attack_data.py          # 공격 전용 데이터 추출
+├── preprocess_03_adjacent.py       # 인접 플로우(과거1/과거2) 결합 데이터셋 생성
+├── preprocess_04_attack_200k.py    # 베이스라인 비교군 (20만개/class) 생성
 ├── preprocess_dummy.py             # 더미 데이터 전처리 (서비스용)
 ├── eda_01_raw_distribution.py      # 클래스 분포 확인
 ├── eda_02_feature_analysis.py      # 피처 분석
@@ -69,6 +95,10 @@ data_analysis/
 │   ├── cleaned_dataset.csv
 │   ├── final_dataset.csv
 │   ├── attack_only_dataset.csv
+│   ├── adjacent_sampled.csv        # 인접 플로우 결합 (클리닝 전)
+│   ├── adjacent_cleaned.csv        # 인접 플로우 결합 (클리닝 후, Attack 포함)
+│   ├── adjacent_final.csv          # 인접 플로우 결합 최종본 (Azure ML 업로드용)
+│   ├── attack_only_200k.csv        # 베이스라인 비교군 (20만개/class)
 │   ├── dummy_50000.csv             # 추론용 더미 데이터 (원본)
 │   └── dummy_final.csv             # 추론용 더미 데이터 (전처리 완료)
 ├── figures/                        # 시각화 결과 (gitignore)
