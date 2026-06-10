@@ -45,6 +45,50 @@ const statusRank: Record<string, number> = {
   정상: 1,
 };
 
+const ATTACK_CATEGORY_MAP: Record<string, string> = {
+  Benign: "정상",
+  benign: "정상",
+  Normal: "정상",
+  normal: "정상",
+  정상: "정상",
+  Scanning: "탐색형 공격",
+  scanning: "탐색형 공격",
+  Reconnaissance: "탐색형 공격",
+  reconnaissance: "탐색형 공격",
+  XSS: "웹 공격",
+  xss: "웹 공격",
+  Injection: "웹 공격",
+  injection: "웹 공격",
+  Password: "인증 공격",
+  password: "인증 공격",
+};
+
+function normalizeText(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isBenignAttackType(attackType: string) {
+  const normalized = normalizeText(attackType);
+
+  return (
+    normalized === "benign" ||
+    normalized === "normal" ||
+    normalized === "정상"
+  );
+}
+
+function isNormalCategory(category: string, attackType: string) {
+  return category.trim() === "정상" || isBenignAttackType(attackType);
+}
+
+function getCategoryByAttackType(attackType: string) {
+  if (isBenignAttackType(attackType)) {
+    return "정상";
+  }
+
+  return ATTACK_CATEGORY_MAP[attackType] ?? ATTACK_CATEGORY_MAP[normalizeText(attackType)];
+}
+
 function getEventNumber(eventId: string) {
   const number = eventId.replace(/\D/g, "");
   return Number(number || 0);
@@ -120,12 +164,50 @@ export default function EventList({
   }, [eventRows]);
 
   const attackOptions = useMemo(() => {
-    return ["전체", ...Array.from(new Set(eventRows.map((row) => row[4])))];
-  }, [eventRows]);
+    const uniqueAttackTypes = Array.from(new Set(eventRows.map((row) => row[4])));
+
+    if (kindFilter === "정상") {
+      return ["Benign"];
+    }
+
+    if (kindFilter === "공격") {
+      return [
+        "전체",
+        ...uniqueAttackTypes.filter((attackType) => !isBenignAttackType(attackType)),
+      ];
+    }
+
+    return ["전체", ...uniqueAttackTypes];
+  }, [eventRows, kindFilter]);
 
   const categoryOptions = useMemo(() => {
-    return ["전체", ...Array.from(new Set(eventRows.map((row) => row[5])))];
-  }, [eventRows]);
+    const uniqueCategories = Array.from(
+      new Set(
+        eventRows.map((row) => {
+          const categoryByAttack = getCategoryByAttackType(row[4]);
+          return row[5] || categoryByAttack || "";
+        }),
+      ),
+    ).filter(Boolean);
+
+    if (attackFilter !== "전체") {
+      const mappedCategory = getCategoryByAttackType(attackFilter);
+      return mappedCategory ? [mappedCategory] : [];
+    }
+
+    if (kindFilter === "정상") {
+      return ["정상"];
+    }
+
+    if (kindFilter === "공격") {
+      return [
+        "전체",
+        ...uniqueCategories.filter((category) => category !== "정상"),
+      ];
+    }
+
+    return ["전체", ...uniqueCategories];
+  }, [eventRows, kindFilter, attackFilter]);
 
   const statusOptions = useMemo(() => {
     return ["전체", ...Array.from(new Set(eventRows.map((row) => row[8])))];
@@ -135,14 +217,26 @@ export default function EventList({
     const keyword = query.trim().toLowerCase();
 
     return eventRows.filter((row) => {
+      const isBenign = isBenignAttackType(row[4]);
+
       const matchesKind =
         kindFilter === "전체" ||
-        (kindFilter === "공격" && row[4] !== "Benign") ||
-        (kindFilter === "정상" && row[4] === "Benign");
+        (kindFilter === "공격" && !isBenign) ||
+        (kindFilter === "정상" && isBenign);
 
       const matchesRisk = riskFilter === "전체" || row[7] === riskFilter;
-      const matchesAttack = attackFilter === "전체" || row[4] === attackFilter;
-      const matchesCategory = categoryFilter === "전체" || row[5] === categoryFilter;
+
+      const matchesAttack =
+        attackFilter === "전체" ||
+        row[4] === attackFilter ||
+        (attackFilter === "Benign" && isBenignAttackType(row[4]));
+
+      const matchesCategory =
+        categoryFilter === "전체" ||
+        row[5] === categoryFilter ||
+        (categoryFilter === "정상" && isNormalCategory(row[5], row[4])) ||
+        getCategoryByAttackType(row[4]) === categoryFilter;
+
       const matchesStatus = statusFilter === "전체" || row[8] === statusFilter;
 
       const matchesPriority =
@@ -248,11 +342,66 @@ export default function EventList({
     }
   }
 
+  function handleKindFilterChange(nextKind: EventKindFilter) {
+    setKindFilter(nextKind);
+    setPage(1);
+
+    if (nextKind === "정상") {
+      setAttackFilter("Benign");
+      setCategoryFilter("정상");
+      return;
+    }
+
+    if (nextKind === "공격") {
+      setAttackFilter("전체");
+      setCategoryFilter("전체");
+      return;
+    }
+
+    setAttackFilter("전체");
+    setCategoryFilter("전체");
+  }
+
+  function handleAttackFilterChange(nextAttack: string) {
+    setAttackFilter(nextAttack);
+    setPage(1);
+
+    if (nextAttack === "전체") {
+      setCategoryFilter(kindFilter === "정상" ? "정상" : "전체");
+      return;
+    }
+
+    const mappedCategory = getCategoryByAttackType(nextAttack);
+
+    if (mappedCategory) {
+      setCategoryFilter(mappedCategory);
+    }
+  }
+
+  function handleCategoryFilterChange(nextCategory: string) {
+    setCategoryFilter(nextCategory);
+    setPage(1);
+  }
+
   useEffect(() => {
-    setKindFilter(initialFilters?.kind ?? "전체");
+    const nextKind = initialFilters?.kind ?? "전체";
+    const nextAttack = initialFilters?.attack ?? "전체";
+    const nextCategory = initialFilters?.category ?? "전체";
+
+    setKindFilter(nextKind);
     setRiskFilter(initialFilters?.risk ?? "전체");
-    setAttackFilter(initialFilters?.attack ?? "전체");
-    setCategoryFilter(initialFilters?.category ?? "전체");
+
+    if (nextKind === "정상") {
+      setAttackFilter("Benign");
+      setCategoryFilter("정상");
+    } else if (nextAttack !== "전체" && getCategoryByAttackType(nextAttack)) {
+      setAttackFilter(nextAttack);
+      setCategoryFilter(getCategoryByAttackType(nextAttack) ?? "전체");
+    } else {
+      setAttackFilter(nextAttack);
+      setCategoryFilter(nextCategory);
+    }
+
     setStatusFilter(initialFilters?.status ?? "전체");
     setQuery(initialFilters?.query ?? "");
     setPage(1);
@@ -290,7 +439,9 @@ export default function EventList({
       >
         <select
           value={kindFilter}
-          onChange={(event) => setKindFilter(event.target.value as EventKindFilter)}
+          onChange={(event) =>
+            handleKindFilterChange(event.target.value as EventKindFilter)
+          }
           className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600"
         >
           <option value="전체">이벤트 구분: 전체</option>
@@ -312,8 +463,9 @@ export default function EventList({
 
         <select
           value={attackFilter}
-          onChange={(event) => setAttackFilter(event.target.value)}
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600"
+          onChange={(event) => handleAttackFilterChange(event.target.value)}
+          disabled={kindFilter === "정상"}
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 disabled:bg-slate-100 disabled:text-slate-400"
         >
           {attackOptions.map((option) => (
             <option key={option} value={option}>
@@ -324,8 +476,9 @@ export default function EventList({
 
         <select
           value={categoryFilter}
-          onChange={(event) => setCategoryFilter(event.target.value)}
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600"
+          onChange={(event) => handleCategoryFilterChange(event.target.value)}
+          disabled={kindFilter === "정상" || attackFilter !== "전체"}
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 disabled:bg-slate-100 disabled:text-slate-400"
         >
           {categoryOptions.map((option) => (
             <option key={option} value={option}>

@@ -62,6 +62,26 @@ const defaultEventListFilters: EventListFilters = {
   query: "",
 };
 
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const date = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${date}`;
+}
+
+function getDateDaysBefore(dateString: string, days: number) {
+  const date = new Date(`${dateString}T00:00:00`);
+  date.setDate(date.getDate() - days);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function toDateInputValue(value?: string) {
   if (!value) {
     return "";
@@ -113,6 +133,35 @@ function addDays(dateString: string, amount: number) {
     pad(date.getMonth() + 1),
     pad(date.getDate()),
   ].join("-");
+}
+
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const date = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${date}`;
+}
+
+function isTodayDate(dateString: string) {
+  return dateString === getTodayDateInputValue();
+}
+
+function getNowTimestampLimit() {
+  return new Date().getTime();
+}
+
+function getDateEndTimestamp(dateString: string) {
+  return new Date(`${dateString}T23:59:59`).getTime();
+}
+
+function getDateStartTimestamp(dateString: string) {
+  return new Date(`${dateString}T00:00:00`).getTime();
+}
+
+function getEventTimestamp(row: EventRow) {
+  return new Date(row[1]).getTime();
 }
 
 function isDateInRange(timestamp: string, startDate: string, endDate: string) {
@@ -202,8 +251,14 @@ export default function SecurityTabs() {
         setAllEventRows(convertedRows);
         setDataRange(nextDataRange);
 
-        const endDate = toDateInputValue(apiEnd);
-        const startDate = endDate ? addDays(endDate, -2) : toDateInputValue(apiStart);
+        const apiEndDate = toDateInputValue(apiEnd);
+        const apiStartDate = toDateInputValue(apiStart);
+        const todayDate = getTodayDateInputValue();
+
+        const endDate =
+          apiEndDate && todayDate > apiEndDate ? apiEndDate : todayDate;
+
+        const startDate = endDate ? addDays(endDate, -2) : apiStartDate;
 
         setSelectedStartDate(startDate);
         setSelectedEndDate(endDate);
@@ -219,13 +274,25 @@ export default function SecurityTabs() {
   }, [fetchKey]);
 
   const filteredEventRows = useMemo(() => {
-    if (!selectedStartDate && !selectedEndDate) {
+    if (!selectedStartDate || !selectedEndDate) {
       return allEventRows;
     }
 
-    return allEventRows.filter((eventRow) =>
-      isDateInRange(eventRow[1], selectedStartDate, selectedEndDate),
-    );
+    const startTime = getDateStartTimestamp(selectedStartDate);
+
+    const endTime = isTodayDate(selectedEndDate)
+      ? getNowTimestampLimit()
+      : getDateEndTimestamp(selectedEndDate);
+
+    return allEventRows.filter((row) => {
+      const eventTime = getEventTimestamp(row);
+
+      if (Number.isNaN(eventTime)) {
+        return false;
+      }
+
+      return eventTime >= startTime && eventTime <= endTime;
+    });
   }, [allEventRows, selectedStartDate, selectedEndDate]);
 
   const refreshCurrentTime = () => {
